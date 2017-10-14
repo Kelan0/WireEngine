@@ -1,0 +1,109 @@
+package wireengine.core.rendering;
+
+import wireengine.core.TickableThread;
+import wireengine.core.WireEngine;
+import wireengine.core.event.Event;
+import wireengine.core.event.events.TickEvent;
+import wireengine.core.rendering.renderer.Renderer;
+import wireengine.core.window.Window;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * @author Kelan
+ */
+public class RenderEngine extends TickableThread
+{
+    private double time;
+    private Window window;
+    private List<Renderer> renderers;
+
+    public RenderEngine()
+    {
+        super("RENDER-THREAD");
+        this.window = new Window();
+        this.renderers = new ArrayList<>();
+    }
+
+    @Override
+    public int getMaxTickrate()
+    {
+        return WireEngine.engine().getGameSettings().getMaxFPS();
+    }
+
+    @Override
+    public void init()
+    {
+        WireEngine.getLogger().info("Initializing rendering");
+        this.window.init();
+
+        for (Renderer renderer : this.renderers)
+        {
+            renderer.init();
+        }
+        window.showWindow(true);
+    }
+
+    @Override
+    public final void tick(double delta)
+    {
+        time += delta;
+        this.window.update(delta);
+        if (!window.shouldClose())
+        {
+            WireEngine.engine().getEventHandler().postEvent(this, new TickEvent.RenderTickEvent(Event.State.PRE, delta));
+            for (Renderer renderer : this.renderers)
+            {
+                renderer.render(delta, time);
+            }
+            WireEngine.engine().getEventHandler().postEvent(this, new TickEvent.RenderTickEvent(Event.State.POST, delta));
+        } else
+        {
+            WireEngine.engine().stop();
+        }
+    }
+
+    @Override
+    public void cleanup()
+    {
+        WireEngine.getLogger().info("Cleaning up rendering");
+        this.window.cleanup();
+
+        for (Renderer renderer : this.renderers)
+        {
+            renderer.cleanup();
+        }
+    }
+
+    public void addRenderer(Renderer renderer)
+    {
+        if (this.getThreadState() != ThreadState.RUN)
+        {
+            if (!this.renderers.contains(renderer))
+            {
+                this.renderers.add(renderer);
+                Collections.sort(this.renderers);
+            }
+        }
+    }
+
+    public Window getWindow()
+    {
+        return window;
+    }
+
+//    public Renderer removeRenderer(Renderer rendering)
+//    {
+//        int index = this.renderers.indexOf(rendering);
+//
+//        if (index > 0)
+//        {
+//            Collections.sort(this.renderers);
+//            return this.renderers.remove(index);
+//        }
+//
+//        return null;
+//    }
+}
