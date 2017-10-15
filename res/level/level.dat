@@ -1,0 +1,17 @@
+Level
+{
+	Scene
+	{
+		Model("Floor")
+		{
+			Type=Cuboid(5.0, 0.5, 8.0),
+			Collidable=true,
+			Transformation={Position=[0, 0, 0],Rotation=[0, 0, 0, 1],Scale=[1, 1, 1]},
+		}
+	}
+	
+	Entities
+	{
+	
+	}
+}

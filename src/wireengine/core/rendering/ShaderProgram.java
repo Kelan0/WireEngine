@@ -3,6 +3,7 @@ package wireengine.core.rendering;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.util.vector.*;
 import wireengine.core.WireEngine;
+import wireengine.core.util.FileUtils;
 
 import java.io.*;
 import java.nio.FloatBuffer;
@@ -40,25 +41,7 @@ public class ShaderProgram
         WireEngine.getLogger().info("Loading shader " + getShaderName(type) + " from file \"" + file + "\"");
         StringBuilder source = new StringBuilder();
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file))))
-        {
-            while (true)
-            {
-                String line = reader.readLine();
-
-                if (line != null)
-                {
-                    source.append(line).append("\n");
-                } else
-                {
-                    break;
-                }
-            }
-        } catch (FileNotFoundException e)
-        {
-            WireEngine.getLogger().warning("File \"" + file + "\" not found.", e);
-            return false;
-        }
+        FileUtils.readFile(file, source);
 
         if (source.length() <= 0)
         {

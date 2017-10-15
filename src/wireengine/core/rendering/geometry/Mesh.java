@@ -126,6 +126,11 @@ public class Mesh
         return new Vector3f(cumulativeVertex.x / (float) vertexList.size(), cumulativeVertex.y / (float) vertexList.size(), cumulativeVertex.z / (float) vertexList.size());
     }
 
+    public Mesh transform(Transformation transformation)
+    {
+        return transform(transformation.getMatrix(null));
+    }
+
     public Mesh transform(Matrix4f matrix)
     {
         if (matrix != null)
@@ -204,7 +209,11 @@ public class Mesh
 
     public Mesh addMesh(Mesh mesh)
     {
-        //TODO: combine vertices and indices of the two meshes.
+        for (Integer index : mesh.indexList)
+        {
+            this.addVertex(new Vertex(mesh.vertexList.get(index)), false);
+        }
+
         return this;
     }
 
@@ -241,22 +250,31 @@ public class Mesh
 
     public Mesh addVertex(Vertex vertex)
     {
+        return addVertex(vertex, true);
+    }
+
+    public Mesh addVertex(Vertex vertex, boolean findExisting)
+    {
         if (vertex != null)
         {
             boolean flag = true;
-            for (int i = 0; i < vertexList.size(); i++)
-            {
-                Vertex v = vertexList.get(i);
 
-                if (v == null)
+            if (findExisting)
+            {
+                for (int i = 0; i < vertexList.size(); i++)
                 {
-                    this.vertexList.remove(i);
-                } else
-                {
-                    if (v.equalPosition(vertex, this.epsilon))
+                    Vertex v = vertexList.get(i);
+
+                    if (v == null)
                     {
-                        flag = false;
-                        indexList.add(v.index);
+                        this.vertexList.remove(i);
+                    } else
+                    {
+                        if (v.equalPosition(vertex, this.epsilon))
+                        {
+                            flag = false;
+                            indexList.add(v.index);
+                        }
                     }
                 }
             }
@@ -335,6 +353,17 @@ public class Mesh
         glBindBuffer(bufferTarget, 0);
     }
 
+    public Mesh copy()
+    {
+        Mesh mesh = Mesh.create();
+
+        mesh.vertexList = new ArrayList<>(this.vertexList);
+        mesh.indexList = new ArrayList<>(this.indexList);
+        mesh.numVertices = this.numVertices;
+        mesh.numIndices = this.numIndices;
+        return mesh;
+    }
+
     public static Mesh create(float epsilon)
     {
         Mesh mesh = new Mesh(epsilon);
@@ -392,6 +421,12 @@ public class Mesh
             this.position = new Vector3f(data[0], data[1], data[2]);
             this.normal = new Vector3f(data[3], data[4], data[5]);
             this.texture = new Vector2f(data[6], data[7]);
+        }
+
+        public Vertex(Vertex vertex)
+        {
+            this(new Vector3f(vertex.position), new Vector3f(vertex.normal), new Vector2f(vertex.texture));
+            this.index = vertex.index;
         }
 
         public Vector3f getPosition()

@@ -2,6 +2,7 @@ package wireengine.testgame;
 
 import wireengine.core.event.EventListener;
 import wireengine.core.event.events.TickEvent;
+import wireengine.core.level.Level;
 import wireengine.core.player.Player;
 
 /**
@@ -32,6 +33,8 @@ public abstract class Game
     public abstract void handleInput(double delta);
 
     public abstract void cleanup();
+
+    public abstract Level getLevel();
 
     public Player getPlayer()
     {

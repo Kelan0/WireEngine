@@ -1,6 +1,5 @@
 package wireengine.core.rendering.renderer;
 
-import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.util.vector.Vector3f;
 import wireengine.core.WireEngine;
@@ -8,11 +7,11 @@ import wireengine.core.level.Level;
 import wireengine.core.rendering.ShaderProgram;
 import wireengine.core.rendering.geometry.Mesh;
 import wireengine.core.rendering.geometry.MeshHelper;
-import wireengine.core.rendering.geometry.Model;
-import wireengine.core.util.Constants;
-import wireengine.core.window.InputHandler;
+import wireengine.core.rendering.geometry.Transformation;
+import wireengine.testgame.Game;
 
 import java.io.IOException;
+import java.util.Random;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.GL_FRAGMENT_SHADER;
@@ -25,7 +24,6 @@ public class WorldRenderer extends Renderer3D
 {
     private ShaderProgram worldShader;
     private int polygonMode = GL_FILL;
-    private Level level;
 
     public WorldRenderer(int width, int height, float fov)
     {
@@ -43,12 +41,12 @@ public class WorldRenderer extends Renderer3D
             worldShader.addShader(GL_FRAGMENT_SHADER, "res/shaders/fragment.glsl");
             worldShader.addAttribute(0, "vertexPos");
             worldShader.createProgram();
+
+            WireEngine.engine().getGame().getLevel().init();
         } catch (IOException e)
         {
             e.printStackTrace();
         }
-
-        this.level = new Level();
     }
 
     @Override
@@ -60,9 +58,12 @@ public class WorldRenderer extends Renderer3D
         worldShader.useProgram(true);
         worldShader.setUniformMatrix4f("projectionMatrix", projectionMatrix);
 
-        WireEngine.engine().getGame().getPlayer().render(worldShader);
-
-        level.render(delta, time);
+        Game game = WireEngine.engine().getGame();
+        game.getPlayer().render(worldShader);
+        if (game.getLevel() != null)
+        {
+            game.getLevel().render(worldShader, delta, time);
+        }
 
         worldShader.useProgram(false);
     }

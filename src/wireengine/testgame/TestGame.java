@@ -4,9 +4,13 @@ import org.lwjgl.util.vector.Vector3f;
 import wireengine.core.GameSettings;
 import wireengine.core.WireEngine;
 import wireengine.core.event.events.TickEvent;
+import wireengine.core.level.Level;
+import wireengine.core.level.LevelLoader;
 import wireengine.core.rendering.renderer.WorldRenderer;
 import wireengine.core.util.MathUtils;
 import wireengine.core.window.InputHandler;
+
+import java.io.IOException;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.GL_FILL;
@@ -19,6 +23,8 @@ public class TestGame extends Game
 {
     private WorldRenderer worldRenderer;
     private String[] gameSettings;
+    private Level level;
+    private LevelLoader levelLoader;
 
     public TestGame(String[] gameSettings)
     {
@@ -31,7 +37,16 @@ public class TestGame extends Game
         GameSettings settings = engine().getGameSettings();
         settings.parse(this.gameSettings);
         this.worldRenderer = new WorldRenderer(settings.getWindowWidth(), settings.getWindowHeight(), 70.0F);
+
         WireEngine.engine().getRenderEngine().addRenderer(this.worldRenderer);
+        try
+        {
+            this.levelLoader = new LevelLoader();
+            this.level = levelLoader.loadLevel("res/level/level.dat");
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -74,6 +89,12 @@ public class TestGame extends Game
     public void cleanup()
     {
 
+    }
+
+    @Override
+    public Level getLevel()
+    {
+        return level;
     }
 
     public static void main(String[] args)
