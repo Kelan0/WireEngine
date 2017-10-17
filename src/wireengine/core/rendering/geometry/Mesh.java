@@ -6,14 +6,13 @@ import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
+import wireengine.core.rendering.ShaderProgram;
 import wireengine.core.util.MathUtils;
 
 import java.nio.Buffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
@@ -55,6 +54,7 @@ public class Mesh
     private int ibo;
 
     private Vector3f cumulativeVertex;
+    private Map<Material, List<Face>> faces = new HashMap<>();
     List<Vertex> vertexList;
     List<Integer> indexList;
 
@@ -68,8 +68,14 @@ public class Mesh
         this.epsilon = epsilon;
     }
 
-    public void draw()
+    public void draw(ShaderProgram shader)
     {
+        Set<Material> materials = this.faces.keySet();
+        if (materials.iterator().hasNext())
+        {
+            materials.iterator().next().bind(shader);
+        }
+
         glBindVertexArray(vao);
         glEnableVertexAttribArray(ATTRIBUTE_LOCATION_POSITION);
         glEnableVertexAttribArray(ATTRIBUTE_LOCATION_NORMAL);
@@ -119,6 +125,15 @@ public class Mesh
     public int getIbo()
     {
         return ibo;
+    }
+
+    public List<Face> getFaces(Material material)
+    {
+        if (material != null)
+        {
+            return this.faces.computeIfAbsent(material, m -> new ArrayList<>());
+        }
+        return new ArrayList<>();
     }
 
     public Vector3f getCentre()
@@ -232,6 +247,11 @@ public class Mesh
                 this.addVertex(((Face3) face).getV1());
                 this.addVertex(((Face3) face).getV2());
                 this.addVertex(((Face3) face).getV3());
+
+                if (face.getMaterial() != null)
+                {
+                    getFaces(face.getMaterial()).add(face);
+                }
             }
         }
 
@@ -270,7 +290,7 @@ public class Mesh
                         this.vertexList.remove(i);
                     } else
                     {
-                        if (v.equalPosition(vertex, this.epsilon))
+                        if (v.equals(vertex, this.epsilon))
                         {
                             flag = false;
                             indexList.add(v.index);
@@ -370,8 +390,8 @@ public class Mesh
 
         mesh.vao = glGenVertexArrays();
         mesh.vbo = glGenBuffers();
-
         mesh.ibo = glGenBuffers();
+
         glBindVertexArray(mesh.vao);
 
 
@@ -478,6 +498,11 @@ public class Mesh
             return new float[]{position.x, position.y, position.z, normal.x, normal.y, normal.z, texture.x, texture.y};
         }
 
+        public boolean equals(Vertex other, float epsilon)
+        {
+            return equalPosition(other, epsilon) && equalsNormal(other, epsilon) && equalsTexture(other, epsilon);
+        }
+
         public boolean equalPosition(Vertex other, float epsilon)
         {
             if (other != null)
@@ -496,6 +521,42 @@ public class Mesh
             return false;
         }
 
+        public boolean equalsNormal(Vertex other, float epsilon)
+        {
+            if (other != null)
+            {
+                epsilon = Math.abs(epsilon);
+
+                if (epsilon > 0.0F)
+                {
+                    return Vector3f.sub(this.normal, other.normal, null).lengthSquared() <= epsilon * epsilon;
+                } else
+                {
+                    return this.normal.equals(other.normal);
+                }
+            }
+
+            return false;
+        }
+
+        public boolean equalsTexture(Vertex other, float epsilon)
+        {
+            if (other != null)
+            {
+                epsilon = Math.abs(epsilon);
+
+                if (epsilon > 0.0F)
+                {
+                    return Vector2f.sub(this.texture, other.texture, null).lengthSquared() <= epsilon * epsilon;
+                } else
+                {
+                    return this.texture.equals(other.texture);
+                }
+            }
+
+            return false;
+        }
+
         @Override
         public String toString()
         {
@@ -505,6 +566,8 @@ public class Mesh
 
     public interface Face
     {
+        Material getMaterial();
+
         Vector3f getNormal();
 
         int getNumVertices();
@@ -512,6 +575,7 @@ public class Mesh
 
     public static class Face3 implements Face
     {
+        Material material;
         Vertex v1;
         Vertex v2;
         Vertex v3;
@@ -571,6 +635,12 @@ public class Mesh
         }
 
         @Override
+        public Material getMaterial()
+        {
+            return material;
+        }
+
+        @Override
         public Vector3f getNormal()
         {
             Vector3f a = Vector3f.sub(v2.position, v1.position, null);
@@ -593,6 +663,7 @@ public class Mesh
 
     public static class Face4 implements Face
     {
+        Material material;
         Face3 f1;
         Face3 f2;
 
@@ -645,6 +716,12 @@ public class Mesh
         {
             this.f2 = f2;
             return this;
+        }
+
+        @Override
+        public Material getMaterial()
+        {
+            return material;
         }
 
         @Override

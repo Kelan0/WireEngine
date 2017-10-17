@@ -5,7 +5,7 @@ import org.lwjgl.util.vector.*;
 import wireengine.core.WireEngine;
 import wireengine.core.util.FileUtils;
 
-import java.io.*;
+import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,7 +38,7 @@ public class ShaderProgram
 
     public boolean addShader(int type, String file) throws IOException
     {
-        WireEngine.getLogger().info("Loading shader " + getShaderName(type) + " from file \"" + file + "\"");
+        WireEngine.getLogger().info("Loading shader " + getShaderName(type) + " from filePath \"" + file + "\"");
         StringBuilder source = new StringBuilder();
 
         FileUtils.readFile(file, source);

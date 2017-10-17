@@ -55,7 +55,7 @@ public class Window
         GLFW.glfwSwapInterval(0);
 
         InputHandler.init(this.windowId);
-        WireEngine.getLogger().info("Successfully created window object and initialized OpenGL on " + Thread.currentThread().getName());
+        WireEngine.getLogger().info("Successfully created window value and initialized OpenGL on " + Thread.currentThread().getName());
     }
 
     public void update(double delta)

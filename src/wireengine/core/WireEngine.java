@@ -14,7 +14,7 @@ import static wireengine.core.TickableThread.ThreadState.*;
  * TODO: 3D rendering
  * TODO: 3D Player movement, 1st and 3rd person
  * TODO: 3D model loading
- * TODO: Map / level loading from a file.
+ * TODO: Map / level loading from a filePath.
  * TODO: Physics and collisions
  * TODO: Sound engine
  * TODO: Networking and multiplayer

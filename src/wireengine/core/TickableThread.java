@@ -239,7 +239,7 @@ public abstract class TickableThread implements ITickable, Runnable
         IDLE(false),
 
         /**
-         * The thread is currently being initialized. i.e. render thread loading textures or sounds etc.
+         * The thread is currently being initialized. i.e. bind thread loading textures or sounds etc.
          */
         INITIALISE(true),
 

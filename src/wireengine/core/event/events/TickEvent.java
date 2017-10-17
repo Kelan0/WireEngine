@@ -31,7 +31,7 @@ public abstract class TickEvent<T extends TickEvent<T>> extends Event<T>
 
     public static class RenderTickEvent extends TickEvent<RenderTickEvent>
     {
-        //store information about the current render state, i.e. current bound buffers??
+        //store information about the current bind state, i.e. current bound buffers??
         public RenderTickEvent(State state, double delta)
         {
             super(state, delta);

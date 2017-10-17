@@ -3,6 +3,9 @@ package wireengine.core.rendering.geometry;
 import org.lwjgl.util.vector.Matrix4f;
 import wireengine.core.rendering.ShaderProgram;
 
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL11.GL_BACK;
+
 /**
  * @author Kelan
  */
@@ -53,7 +56,10 @@ public class Model
     {
         Matrix4f mat = this.transformation.getMatrix(new Matrix4f());
         shader.setUniformMatrix4f("modelMatrix", mat);
-        this.mesh.draw();
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        this.mesh.draw(shader);
     }
 
     @Override

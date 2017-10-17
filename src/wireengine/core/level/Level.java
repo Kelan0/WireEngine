@@ -1,10 +1,9 @@
 package wireengine.core.level;
 
 import wireengine.core.rendering.ShaderProgram;
-import wireengine.core.rendering.geometry.Mesh;
-import wireengine.core.rendering.geometry.Model;
-import wireengine.core.rendering.geometry.Transformation;
+import wireengine.core.rendering.geometry.*;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,7 +23,13 @@ public class Level
     public void init()
     {
         this.dynamicScene = new ArrayList<>();
-        this.staticScene = new Model(Mesh.create().compile(), new Transformation());
+        try
+        {
+            this.staticScene = new Model(MeshHelper.parseObj("res/level/testlevel/testlevel.obj"), new Transformation());
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     public void cleanup()

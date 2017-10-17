@@ -44,7 +44,7 @@ public class LevelLoader
 
             if (indent != 0)
             {
-                System.out.println("Level file has mismatched parentheses. This may cause errors.");
+                System.out.println("Level filePath has mismatched parentheses. This may cause errors.");
             }
         }
 

@@ -39,7 +39,10 @@ public class WorldRenderer extends Renderer3D
             GL.createCapabilities();
             worldShader.addShader(GL_VERTEX_SHADER, "res/shaders/vertex.glsl");
             worldShader.addShader(GL_FRAGMENT_SHADER, "res/shaders/fragment.glsl");
-            worldShader.addAttribute(0, "vertexPos");
+            worldShader.addAttribute(Mesh.ATTRIBUTE_LOCATION_POSITION, "vertexPosition");
+            worldShader.addAttribute(Mesh.ATTRIBUTE_LOCATION_NORMAL, "vertexNormal");
+            worldShader.addAttribute(Mesh.ATTRIBUTE_LOCATION_TEXTURE, "vertexTexture");
+
             worldShader.createProgram();
 
             WireEngine.engine().getGame().getLevel().init();
