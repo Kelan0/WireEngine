@@ -1,19 +1,18 @@
 package wireengine.testgame;
 
-import org.lwjgl.util.vector.Vector3f;
 import wireengine.core.GameSettings;
 import wireengine.core.WireEngine;
 import wireengine.core.event.events.TickEvent;
 import wireengine.core.level.Level;
 import wireengine.core.level.LevelLoader;
+import wireengine.core.rendering.geometry.MeshHelper;
 import wireengine.core.rendering.renderer.WorldRenderer;
-import wireengine.core.util.MathUtils;
 import wireengine.core.window.InputHandler;
 
 import java.io.IOException;
 
-import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11.GL_FILL;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_F1;
 import static wireengine.core.WireEngine.engine;
 
 /**
@@ -99,7 +98,67 @@ public class TestGame extends Game
 
     public static void main(String[] args)
     {
-        WireEngine.createEngine(new TestGame(args));
+//        WireEngine.createEngine(new TestGame(args));
+
+        String line = "map_Kd -s 0.03125 0.03125 placeholder_orange.png";
+
+        String[] split = line.split(" ");
+
+        for (int i = 0; i < split.length; i++)
+        {
+            System.out.println("split[" + i + "] = " + split[i]);
+        }
+//        String line = "f 4/2/11 8/1/10 6/6/12";
+//
+//        int[] indices = new int[9];
+//        int n = MeshHelper.readIndices(line, indices);
+//
+//        StringBuilder sb = new StringBuilder();
+//
+//        for (int i = 0; i < indices.length; i++)
+//        {
+//            sb.append(indices[i]).append(", ");
+//        }
+//        sb.append("\b\b\n");
+//        int pointer = 0;
+//        for (int i = 0; i < n; i++)
+//        {
+//            String type = "unknown";
+//
+//            if (n == 3)
+//            {
+//                type = i == 0 ? "vertex" : i == 1 ? "texture" : i == 2 ? "normal" : type;
+//            }
+//
+//            if (n == 2)
+//            {
+//                type = i == 0 ? "vertex" : i == 1 ? "normal" : type;
+//            }
+//
+//            if (n == 1)
+//            {
+//                type = i == 0 ? "vertex" : type;
+//            }
+//
+//            sb.append(type + "=[");
+//            for (int j = 0; j < 3; j++)
+//            {
+//                sb.append(indices[pointer++]).append(", ");
+//            }
+//            sb.append("\b\b]\n");
+//        }
+//
+//        System.out.println(line);
+//        System.out.println(sb);
+
+
+
+
+
+
+
+
+
 
         //testing MathUtils functions
 

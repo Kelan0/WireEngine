@@ -2,12 +2,34 @@ package wireengine.core.rendering.geometry;
 
 import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
+import wireengine.core.WireEngine;
+import wireengine.core.util.FileUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Kelan
  */
 public class MeshHelper
 {
+    public static final String OBJ_VERTEX_GEOMETRIC = "v ";
+    public static final String OBJ_VERTEX_NORMAL = "vn ";
+    public static final String OBJ_VERTEX_TEXTURE = "vt ";
+    public static final String OBJ_FACE_INDEX = "f ";
+    public static final String OBJ_MATERIAL_LIB = "mtllib ";
+    public static final String OBJ_MATERIAL_USE = "usemtl ";
+    public static final String MTL_DEFINITION = "newmtl ";
+    public static final String MTL_AMBIENT_COLOUR = "Ka ";
+    public static final String MTL_DEFUSE_OLOUR = "Kd ";
+    public static final String MTL_SPECULAR_COLOUR = "Ks ";
+    public static final String MTL_SPECULAR_COEFFICIENT = "Ns ";
+    public static final String MTL_AMBIENT_TEXTURE = "map_Ka ";
+    public static final String MTL_DEFUSE_TEXTURE = "map_Kd ";
+    public static final String MTL_SPECULAR_TEXTURE = "map_Ks ";
+
     public static Mesh createCube(float xSize, float ySize, float zSize)
     {
         xSize *= 0.5;
@@ -73,7 +95,7 @@ public class MeshHelper
 
         Mesh mesh = Mesh.create();
 
-        for (pointer = 0; pointer < indices.length;)
+        for (pointer = 0; pointer < indices.length; )
         {
             Mesh.Vertex v1 = vertices[indices[pointer++]];
             Mesh.Vertex v2 = vertices[indices[pointer++]];
@@ -102,6 +124,7 @@ public class MeshHelper
 
         return mesh.compile();
     }
+
     public static Mesh createPlane(float width, float height, Vector3f normal)
     {
         Mesh mesh = Mesh.create();
@@ -114,5 +137,302 @@ public class MeshHelper
         Mesh mesh = Mesh.create();
 
         return mesh;
+    }
+
+    public static Mesh parseObj(String file) throws IOException
+    {
+        StringBuilder sb = new StringBuilder();
+        if (FileUtils.readFile(file, sb) && sb.length() > 0)
+        {
+            String[] fileSource = sb.toString().split("\n");
+
+            List<Vector3f> geometrics = new ArrayList<>();
+            List<Vector3f> normals = new ArrayList<>();
+            List<Vector2f> textures = new ArrayList<>();
+
+            for (String line : fileSource)
+            {
+                if (line == null)
+                {
+                    continue;
+                }
+
+                if (line.startsWith(OBJ_VERTEX_GEOMETRIC))
+                {
+                    line = line.substring(OBJ_VERTEX_GEOMETRIC.length());
+                    geometrics.add(readVector3f(line));
+                    continue;
+                }
+
+                if (line.startsWith(OBJ_VERTEX_NORMAL))
+                {
+                    line = line.substring(OBJ_VERTEX_NORMAL.length());
+                    normals.add(readVector3f(line));
+                    continue;
+                }
+
+                if (line.startsWith(OBJ_VERTEX_TEXTURE))
+                {
+                    line = line.substring(OBJ_VERTEX_TEXTURE.length());
+                    textures.add(readVector2f(line));
+                    continue;
+                }
+
+                if (line.startsWith(OBJ_FACE_INDEX))
+                {
+                    line = line.substring(OBJ_FACE_INDEX.length());
+
+                    String[] data = line.split(" ");
+
+                    if (data.length == 3) //Only triangulated faces allowed
+                    {
+                        int[] indices = new int[9];
+                        int i = readIndices(line, indices);
+
+                        if (i == 0)
+                        {
+                            WireEngine.getLogger().warning("Failed to load face indices from OBJ. This may cause errors.");
+                            continue;
+                        }
+
+                        if (i >= 1)
+                        {
+                            Mesh.Vertex v1 = new Mesh.Vertex(geometrics.get(indices[0]), new Vector3f(), new Vector2f());
+                            Mesh.Vertex v2 = new Mesh.Vertex(geometrics.get(indices[1]), new Vector3f(), new Vector2f());
+                            Mesh.Vertex v3 = new Mesh.Vertex(geometrics.get(indices[2]), new Vector3f(), new Vector2f());
+
+                            if (i >= 2)
+                            {
+                                if (i >= 3)
+                                {
+                                    v1.texture = textures.get(indices[3]);
+                                    v2.texture = textures.get(indices[4]);
+                                    v3.texture = textures.get(indices[5]);
+                                    v1.normal = normals.get(indices[6]);
+                                    v2.normal = normals.get(indices[7]);
+                                    v3.normal = normals.get(indices[8]);
+                                } else
+                                {
+                                    v1.normal = normals.get(indices[3]);
+                                    v2.normal = normals.get(indices[4]);
+                                    v3.normal = normals.get(indices[5]);
+                                }
+                            }
+                        }
+                    } else
+                    {
+                        throw new IllegalStateException("OBJ file " + file + " is not triangulated. Onnly triangulated OBJs are supported");
+                    }
+
+                    continue;
+                }
+            }
+
+            Mesh mesh = Mesh.create();
+
+
+            return mesh.compile();
+        }
+
+//        throw new UnexpectedException("An unexpected error occurred while loading the OBJ file " + file);
+
+        return null;
+    }
+
+    public static List<Material> parseMtl(String file) throws IOException
+    {
+        List<Material> materials = new ArrayList<>();
+
+        StringBuilder sb = new StringBuilder();
+        if (FileUtils.readFile(file, sb) && sb.length() > 0)
+        {
+            File f = new File(file);
+            String[] fileSource = sb.toString().split("\n");
+            Material currentMaterial = null;
+
+            for (String line : fileSource)
+            {
+                if (line.startsWith(MTL_DEFINITION))
+                {
+                    line = line.substring(MTL_DEFINITION.length());
+                    if (currentMaterial != null)
+                    {
+                        materials.add(currentMaterial);
+                    }
+
+                    currentMaterial = new Material(line.split(" ")[0]);
+                    continue;
+                }
+
+                if (currentMaterial != null)
+                {
+                    if (line.startsWith(MTL_AMBIENT_COLOUR))
+                    {
+                        line = line.substring(MTL_AMBIENT_COLOUR.length());
+                        currentMaterial.ambient = readVector3f(line);
+                        continue;
+                    }
+
+                    if (line.startsWith(MTL_DEFUSE_OLOUR))
+                    {
+                        line = line.substring(MTL_DEFUSE_OLOUR.length());
+                        currentMaterial.diffuse = readVector3f(line);
+                        continue;
+                    }
+                    if (line.startsWith(MTL_SPECULAR_COLOUR))
+                    {
+                        line = line.substring(MTL_SPECULAR_COLOUR.length());
+                        currentMaterial.specular = readVector3f(line);
+                        continue;
+                    }
+
+                    if (line.startsWith(MTL_DEFUSE_TEXTURE))
+                    {
+                        line = line.substring(MTL_DEFUSE_TEXTURE.length());
+
+                        String temp = line;
+
+                        int pointer = 0;
+
+                        /*
+                        https://github.com/syoyo/tinyobjloader/blob/master/tiny_obj_loader.h
+                        http://paulbourke.net/dataformats/mtl/
+                        https://github.com/jaredloomis/YFNH-LWJGL/blob/master/3DYFNH/src/net/future/model/OBJLoader.java
+                         */
+                        if (temp.startsWith("-blendu "))
+                        {
+                            temp = temp.substring("-blendu ".length());
+                            boolean blendu = readBoolean(temp, true);
+                        } else if (temp.startsWith("-blendv "))
+                        {
+                            temp = temp.substring("-blendv ".length());
+                            boolean blendv = readBoolean(temp, true);
+                        } else if (temp.startsWith("-blendu "))
+                        {
+                            temp = temp.substring("-blendu ".length());
+                            boolean blendu = readBoolean(temp, true);
+                        }
+
+                        String filename = line.split(" ")[0];
+                        float wrapx = 0.0F;
+                        float wrapy = 0.0F;
+
+                        currentMaterial.texture = Texture.loadTexture(f.getParentFile() + File.separator + filename).setTextureWrap(wrapx, wrapy);
+                        continue;
+                    }
+
+                    //TODO add support for specular coefficiants
+                    if (line.startsWith(MTL_SPECULAR_COEFFICIENT))
+                    {
+
+                        continue;
+                    }
+
+                    //TODO add support for ambient texture map
+                    if (line.startsWith(MTL_AMBIENT_TEXTURE))
+                    {
+
+                        continue;
+                    }
+
+                    //TODO add support for specular texture map
+                    if (line.startsWith(MTL_SPECULAR_TEXTURE))
+                    {
+
+                        continue;
+                    }
+                }
+            }
+        }
+
+        return materials;
+    }
+
+    private static boolean readBoolean(String str, boolean defaultVal)
+    {
+        if (str != null && str.length() > 0)
+        {
+            str = str.toLowerCase();
+            if ("true".startsWith(str) || "on".startsWith(str) || "yes".startsWith(str))
+            {
+                return true;
+            }
+
+            if ("false".startsWith(str) || "off".startsWith(str) || "no".startsWith(str))
+            {
+                return false;
+            }
+        }
+
+        return defaultVal;
+    }
+
+    private static Vector2f readVector2f(String line)
+    {
+        String[] data = line.split(" ");
+        float x = Float.parseFloat(data[0]);
+        float y = Float.parseFloat(data[1]);
+
+        return new Vector2f(x, y);
+    }
+
+    private static Vector3f readVector3f(String line)
+    {
+        String[] data = line.split(" ");
+        float x = Float.parseFloat(data[0]);
+        float y = Float.parseFloat(data[1]);
+        float z = Float.parseFloat(data[2]);
+
+        return new Vector3f(x, y, z);
+    }
+
+    public static int readIndices(String line, int[] indices)
+    {
+        if (line == null || line.isEmpty() || indices == null || indices.length < 3)
+        {
+            return 0;
+        }
+
+        int maxIndex; //1 guarantees a vertex position. 2 guarantees a position and a normal. 3 guarantees a position, texture and normal
+        if (line.contains("/")) //This vertex has normals and/or textures
+        {
+            if (line.contains("//")) //This vertex does not have textures
+            {
+                maxIndex = 2;
+                line = line.replace("//", "/");
+            } else
+            {
+                maxIndex = 3;
+            }
+        } else
+        {
+            maxIndex = 1;
+        }
+
+        if (indices.length < maxIndex * 3)
+        {
+            return 0;
+        }
+
+        String[] data = line.split(" ");
+
+        String[] vertex1 = data[0].split("/");
+        String[] vertex2 = data[1].split("/");
+        String[] vertex3 = data[2].split("/");
+
+        if (vertex1.length != vertex2.length || vertex1.length != vertex3.length)
+        {
+            return 0;
+        }
+
+        int pointer = 0;
+        for (int i = 0; i < maxIndex; i++)
+        {
+            indices[pointer++] = Integer.valueOf(vertex1[i]);
+            indices[pointer++] = Integer.valueOf(vertex2[i]);
+            indices[pointer++] = Integer.valueOf(vertex3[i]);
+        }
+
+        return maxIndex;
     }
 }
