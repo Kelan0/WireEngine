@@ -366,7 +366,6 @@ public class MeshHelper
 
             if (currentMaterial != null)
             {
-                System.out.println(currentMaterial);
                 materials.add(currentMaterial);
             }
         } else

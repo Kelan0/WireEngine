@@ -77,7 +77,6 @@ public class TestGame extends Game
         player.handleInput(delta);
         if (InputHandler.keyReleased(GLFW_KEY_ESCAPE))
         {
-            System.out.println(InputHandler.isCursorGrabbed());
             InputHandler.grabCursor(!InputHandler.isCursorGrabbed());
         }
 

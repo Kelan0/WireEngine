@@ -1,5 +1,6 @@
 package wireengine.core.rendering.geometry;
 
+import javafx.util.Pair;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector2f;
@@ -7,7 +8,6 @@ import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
 import wireengine.core.rendering.ShaderProgram;
-import wireengine.core.util.MathUtils;
 
 import java.nio.Buffer;
 import java.nio.FloatBuffer;
@@ -46,19 +46,17 @@ public class Mesh
     public static final int ATTRIBUTE_LOCATION_NORMAL = 1;
     public static final int ATTRIBUTE_LOCATION_TEXTURE = 2;
 
-    private int numVertices;
-    private int numIndices;
-
     private int vao;
     private int vbo;
     private int ibo;
 
     private Vector3f cumulativeVertex;
-    private Map<Material, List<Face>> faces = new HashMap<>();
+    private Map<Material, List<Face3>> materialFaceMap = new HashMap<>();
+    private Map<Material, List<Pair<Integer, Integer>>> materialRenderMap = new HashMap<>();
     List<Vertex> vertexList;
     List<Integer> indexList;
 
-    private float epsilon;
+    protected float epsilon;
 
     private Mesh(float epsilon)
     {
@@ -70,19 +68,32 @@ public class Mesh
 
     public void draw(ShaderProgram shader)
     {
-        Set<Material> materials = this.faces.keySet();
-        if (materials.iterator().hasNext())
-        {
-            materials.iterator().next().bind(shader);
-        }
-
         glBindVertexArray(vao);
         glEnableVertexAttribArray(ATTRIBUTE_LOCATION_POSITION);
         glEnableVertexAttribArray(ATTRIBUTE_LOCATION_NORMAL);
         glEnableVertexAttribArray(ATTRIBUTE_LOCATION_TEXTURE);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-        glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, 0);
+
+        for (Map.Entry<Material, List<Pair<Integer, Integer>>> entry : this.materialRenderMap.entrySet())
+        {
+            Material material = entry.getKey();
+
+            if (material != null)
+            {
+                material.bind(shader);
+                List<Pair<Integer, Integer>> indexList = entry.getValue();
+
+                for (Pair<Integer, Integer> faces : indexList)
+                {
+                    int start = faces.getKey();
+                    int end = faces.getValue();
+                    glDrawElements(GL_TRIANGLES, (end - start) + 1, GL_UNSIGNED_INT, INT_SIZE_BYTES * start);
+                }
+            }
+        }
+
+//        glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         glDisableVertexAttribArray(ATTRIBUTE_LOCATION_POSITION);
@@ -104,12 +115,12 @@ public class Mesh
 
     public int getNumVertices()
     {
-        return numVertices;
+        return vertexList.size();
     }
 
     public int getNumIndices()
     {
-        return numIndices;
+        return indexList.size();
     }
 
     public int getVao()
@@ -127,11 +138,20 @@ public class Mesh
         return ibo;
     }
 
-    public List<Face> getFaces(Material material)
+    public List<Face3> getFaceList(Material material)
     {
         if (material != null)
         {
-            return this.faces.computeIfAbsent(material, m -> new ArrayList<>());
+            return this.materialFaceMap.computeIfAbsent(material, m -> new ArrayList<>());
+        }
+        return new ArrayList<>();
+    }
+
+    public List<Pair<Integer, Integer>> getMaterialRenderMap(Material material)
+    {
+        if (material != null)
+        {
+            return this.materialRenderMap.computeIfAbsent(material, m -> new ArrayList<>());
         }
         return new ArrayList<>();
     }
@@ -232,14 +252,14 @@ public class Mesh
         return this;
     }
 
-    public Mesh addFace(Face face)
+    public Mesh addFace(Face face, boolean addMaterial)
     {
         if (face != null)
         {
             if (face instanceof Face4)
             {
-                addFace(((Face4) face).getF1());
-                addFace(((Face4) face).getF2());
+                addFace(((Face4) face).getF1(), addMaterial);
+                addFace(((Face4) face).getF2(), addMaterial);
             }
 
             if (face instanceof Face3)
@@ -248,14 +268,19 @@ public class Mesh
                 this.addVertex(((Face3) face).getV2());
                 this.addVertex(((Face3) face).getV3());
 
-                if (face.getMaterial() != null)
+                if (addMaterial && face.getMaterial() != null)
                 {
-                    getFaces(face.getMaterial()).add(face);
+                    getFaceList(face.getMaterial()).add((Face3) face);
                 }
             }
         }
 
         return this;
+    }
+
+    public Mesh addFace(Face face)
+    {
+        return addFace(face, true);
     }
 
     public Mesh addVertices(Vertex[] vertices)
@@ -315,6 +340,33 @@ public class Mesh
 
     public Mesh compile()
     {
+
+        this.vertexList.clear();
+        this.indexList.clear();
+
+        int startIndex = 0;
+        for (Map.Entry<Material, List<Face3>> entry : this.materialFaceMap.entrySet())
+        {
+            Material material = entry.getKey();
+            List<Face3> faces = entry.getValue();
+
+            if (material != null)
+            {
+                int endIndex = startIndex;
+                for (Face3 face : faces)
+                {
+                    for (Vertex v : face.getVertices())
+                    {
+                        addVertex(v);
+                        endIndex++;
+                    }
+                }
+
+                getMaterialRenderMap(material).add(new Pair<>(startIndex, endIndex));
+                startIndex = endIndex;
+            }
+        }
+
         float[] vertices = new float[vertexList.size() * VERTEX_SIZE_FLOATS];
         int[] indices = new int[indexList.size()];
 
@@ -336,9 +388,6 @@ public class Mesh
 
         FloatBuffer vertexData = (FloatBuffer) BufferUtils.createFloatBuffer(vertices.length).put(vertices).flip();
         IntBuffer indexData = (IntBuffer) BufferUtils.createIntBuffer(indices.length).put(indices).flip();
-
-        this.numVertices = vertexList.size();
-        this.numIndices = indexList.size();
 
         glBindVertexArray(this.vao);
 
@@ -371,17 +420,6 @@ public class Mesh
         }
 
         glBindBuffer(bufferTarget, 0);
-    }
-
-    public Mesh copy()
-    {
-        Mesh mesh = Mesh.create();
-
-        mesh.vertexList = new ArrayList<>(this.vertexList);
-        mesh.indexList = new ArrayList<>(this.indexList);
-        mesh.numVertices = this.numVertices;
-        mesh.numIndices = this.numIndices;
-        return mesh;
     }
 
     public static Mesh create(float epsilon)
@@ -419,7 +457,6 @@ public class Mesh
         Vector3f position;
         Vector3f normal;
         Vector2f texture;
-
         private int index;
 
         public Vertex(Vector3f position, Vector3f normal, Vector2f texture)
@@ -570,67 +607,77 @@ public class Mesh
 
         Vector3f getNormal();
 
-        int getNumVertices();
+        Vertex[] getVertices();
     }
 
     public static class Face3 implements Face
     {
         Material material;
-        Vertex v1;
-        Vertex v2;
-        Vertex v3;
+        Vertex[] vertices = new Vertex[3];
 
         public Face3(Vertex v1, Vertex v2, Vertex v3)
         {
-            this.v1 = v1;
-            this.v2 = v2;
-            this.v3 = v3;
+            this(v1, v2, v3, 0.0001F);
+        }
+
+        public Face3(Vertex v1, Vertex v2, Vertex v3, float epsilon)
+        {
+            this.set(v1, v2, v3);
         }
 
         public Face3(float[] data)
         {
-            if (data.length != VERTEX_SIZE_FLOATS * getNumVertices())
+            if (data.length != VERTEX_SIZE_FLOATS * getVertices().length)
             {
                 IllegalArgumentException e = new IllegalArgumentException("Cannot construct face from incomplete data");
                 WireEngine.getLogger().warning(e.getLocalizedMessage());
                 throw e;
             }
 
-            this.v1 = new Vertex(Arrays.copyOfRange(data, VERTEX_SIZE_FLOATS * 0, VERTEX_SIZE_FLOATS * 1));
-            this.v2 = new Vertex(Arrays.copyOfRange(data, VERTEX_SIZE_FLOATS * 1, VERTEX_SIZE_FLOATS * 2));
-            this.v3 = new Vertex(Arrays.copyOfRange(data, VERTEX_SIZE_FLOATS * 2, VERTEX_SIZE_FLOATS * 3));
+            Vertex v1 = new Vertex(Arrays.copyOfRange(data, VERTEX_SIZE_FLOATS * 0, VERTEX_SIZE_FLOATS * 1));
+            Vertex v2 = new Vertex(Arrays.copyOfRange(data, VERTEX_SIZE_FLOATS * 1, VERTEX_SIZE_FLOATS * 2));
+            Vertex v3 = new Vertex(Arrays.copyOfRange(data, VERTEX_SIZE_FLOATS * 2, VERTEX_SIZE_FLOATS * 3));
+
+            this.set(v1, v2, v3);
+        }
+
+        public void set(Vertex v1, Vertex v2, Vertex v3)
+        {
+            this.vertices[0] = v1;
+            this.vertices[1] = v2;
+            this.vertices[2] = v3;
         }
 
         public Vertex getV1()
         {
-            return v1;
+            return this.vertices[0];
         }
 
         public Face3 setV1(Vertex v1)
         {
-            this.v1 = v1;
+            this.vertices[0] = v1;
             return this;
         }
 
         public Vertex getV2()
         {
-            return v2;
+            return this.vertices[1];
         }
 
         public Face3 setV2(Vertex v2)
         {
-            this.v2 = v2;
+            this.vertices[1] = v2;
             return this;
         }
 
         public Vertex getV3()
         {
-            return v3;
+            return this.vertices[2];
         }
 
         public Face3 setV3(Vertex v3)
         {
-            this.v3 = v3;
+            this.vertices[2] = v3;
             return this;
         }
 
@@ -643,39 +690,63 @@ public class Mesh
         @Override
         public Vector3f getNormal()
         {
-            Vector3f a = Vector3f.sub(v2.position, v1.position, null);
-            Vector3f b = Vector3f.sub(v3.position, v1.position, null);
+            Vector3f a = Vector3f.sub(getV2().position, getV1().position, null);
+            Vector3f b = Vector3f.sub(getV3().position, getV1().position, null);
             return Vector3f.cross(a, b, null).normalise(null);
         }
 
         @Override
-        public int getNumVertices()
+        public Vertex[] getVertices()
         {
-            return 3;
+            return this.vertices;
+        }
+
+        public Vertex[] getSharedVertices(Face3 other, float epsilon)
+        {
+            List<Vertex> shared = new ArrayList<>(3);
+
+            for (Vertex v1 : this.vertices)
+            {
+                for (Vertex v2 : other.vertices)
+                {
+                    if (v1.equals(v2, epsilon))
+                    {
+                        shared.add(v1);
+                    }
+                }
+            }
+
+            return shared.toArray(new Vertex[shared.size()]);
         }
 
         @Override
         public String toString()
         {
-            return "Face3{" + "v1=" + v1 + ", v2=" + v2 + ", v3=" + v3 + '}';
+            return "Face3{" + "v1=" + getV1() + ", v2=" + getV2() + ", v3=" + getV3() + '}';
         }
     }
 
     public static class Face4 implements Face
     {
         Material material;
+        private Vertex[] vertices = new Vertex[4]; //TODO: fill this array and invalidate this face if the two faces are not connected by 2 vertices.
         Face3 f1;
         Face3 f2;
 
-        public Face4(Face3 f1, Face3 f2)
+        public Face4(Face3 f1, Face3 f2, float epsilon)
         {
             this.f1 = f1;
             this.f2 = f2;
         }
 
+        public Face4(Face3 f1, Face3 f2)
+        {
+            this(f1, f2, 0.0001F);
+        }
+
         public Face4(float[] data)
         {
-            if (data.length != VERTEX_SIZE_FLOATS * getNumVertices())
+            if (data.length != VERTEX_SIZE_FLOATS * getVertices().length)
             {
                 IllegalArgumentException e = new IllegalArgumentException("Cannot construct quad from incomplete data");
                 WireEngine.getLogger().warning(e.getLocalizedMessage());
@@ -731,9 +802,9 @@ public class Mesh
         }
 
         @Override
-        public int getNumVertices()
+        public Vertex[] getVertices()
         {
-            return 4;
+            return this.vertices;
         }
 
         @Override

@@ -57,7 +57,7 @@ public class GameSettings
                     }
                 }
 
-                System.out.println("\"" + arg + "\" is not a valid program argument.");
+                WireEngine.getLogger().warning("\"" + arg + "\" is not a valid program argument.");
             }
         }
     }

@@ -44,7 +44,7 @@ public class LevelLoader
 
             if (indent != 0)
             {
-                System.out.println("Level filePath has mismatched parentheses. This may cause errors.");
+                WireEngine.getLogger().warning("Level filePath has mismatched parentheses. This may cause errors.");
             }
         }
 
@@ -53,7 +53,6 @@ public class LevelLoader
 
     private void processLine()
     {
-        System.out.println("Processing indent " + indent);
         while (true)
         {
             if (line == null)
@@ -61,7 +60,6 @@ public class LevelLoader
                 break;
             }
         }
-        System.out.println("Indent ended");
     }
 
     public boolean saveLevel(Level level)

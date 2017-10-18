@@ -72,7 +72,7 @@ public abstract class TickableThread implements ITickable, Runnable
         {
             return e;
         }
-        System.out.println("Finished initializing");
+        WireEngine.getLogger().info("Finished initializing");
 
         synchronized (this.stateLock)
         {
