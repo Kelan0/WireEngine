@@ -63,7 +63,7 @@ public class TickScheduler implements Runnable
                 long currentTime = System.nanoTime();
                 long elapsedTime = (currentTime - state.lastTime);
 
-                state.partialTicks = (elapsedTime * (double) tickable.getMaxTickrate()) / 1000000000.0; //a / (b / c) = (ac) / b
+                state.partialTicks = (elapsedTime * (double) tickable.getMaxTickrate()) / 1000000000.0; //a / (b / distance) = (ac) / b
 
                 if (state.partialTicks >= 1.0)
                 {

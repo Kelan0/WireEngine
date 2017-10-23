@@ -2,7 +2,6 @@ package wireengine.core;
 
 import wireengine.core.event.EventHandler;
 import wireengine.core.physics.PhysicsEngine;
-import wireengine.core.player.Player;
 import wireengine.core.rendering.RenderEngine;
 import wireengine.testgame.Game;
 

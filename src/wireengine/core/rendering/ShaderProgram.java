@@ -195,6 +195,11 @@ public class ShaderProgram
         glUniform4i(getUniformLocation(uniform), i, i1, i2, i3);
     }
 
+    public void setUniformBoolean(String uniform, boolean b)
+    {
+        glUniform1i(getUniformLocation(uniform), b ? 1 : 0);
+    }
+
     public void delete()
     {
         for (int shader : new ArrayList<>(shaders))

@@ -4,6 +4,7 @@ import wireengine.core.TickableThread;
 import wireengine.core.WireEngine;
 import wireengine.core.event.Event;
 import wireengine.core.event.events.TickEvent;
+import wireengine.core.rendering.renderer.DebugRenderer;
 import wireengine.core.rendering.renderer.Renderer;
 import wireengine.core.window.Window;
 
@@ -16,7 +17,6 @@ import java.util.List;
  */
 public class RenderEngine extends TickableThread
 {
-    private double time;
     private Window window;
     private List<Renderer> renderers;
 
@@ -43,20 +43,21 @@ public class RenderEngine extends TickableThread
         {
             renderer.init();
         }
+
+        DebugRenderer.getInstance().init();
         window.showWindow(true);
     }
 
     @Override
     public final void tick(double delta)
     {
-        time += delta;
         this.window.update(delta);
         if (!window.shouldClose())
         {
             WireEngine.engine().getEventHandler().postEvent(this, new TickEvent.RenderTickEvent(Event.State.PRE, delta));
             for (Renderer renderer : this.renderers)
             {
-                renderer.render(delta, time);
+                renderer.render(delta, this.getTimeSeconds());
             }
             WireEngine.engine().getEventHandler().postEvent(this, new TickEvent.RenderTickEvent(Event.State.POST, delta));
         } else

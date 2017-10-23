@@ -7,6 +7,7 @@ import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
+import wireengine.core.physics.collision.Triangle;
 import wireengine.core.rendering.ShaderProgram;
 
 import java.nio.Buffer;
@@ -26,43 +27,54 @@ public class Mesh
 {
     public static final int FLOAT_SIZE_BYTES = Float.BYTES;
     public static final int INT_SIZE_BYTES = Integer.BYTES;
+
     public static final int FLOATS_PER_POSITION = 3;
     public static final int FLOATS_PER_NORMAL = 3;
     public static final int FLOATS_PER_TEXTURE = 2;
-    public static final int VERTEX_SIZE_FLOATS = FLOATS_PER_POSITION + FLOATS_PER_NORMAL + FLOATS_PER_TEXTURE;
+    public static final int FLOATS_PER_COLOUR = 4;
+
+    public static final int VERTEX_SIZE_FLOATS = FLOATS_PER_POSITION + FLOATS_PER_NORMAL + FLOATS_PER_TEXTURE + FLOATS_PER_COLOUR;
     public static final int VERTEX_SIZE_BYTES = VERTEX_SIZE_FLOATS * FLOAT_SIZE_BYTES;
 
     public static final int POSITION_OFFSET_FLOATS = 0;
     public static final int NORMAL_OFFSET_FLOATS = POSITION_OFFSET_FLOATS + FLOATS_PER_POSITION;
     public static final int TEXTURE_OFFSET_FLOATS = NORMAL_OFFSET_FLOATS + FLOATS_PER_NORMAL;
+    public static final int COLOUR_OFFSET_FLOATS = TEXTURE_OFFSET_FLOATS + FLOATS_PER_TEXTURE;
+
     public static final int POSITION_OFFSET_BYTES = POSITION_OFFSET_FLOATS * FLOAT_SIZE_BYTES;
     public static final int NORMAL_OFFSET_BYTES = NORMAL_OFFSET_FLOATS * FLOAT_SIZE_BYTES;
     public static final int TEXTURE_OFFSET_BYTES = TEXTURE_OFFSET_FLOATS * FLOAT_SIZE_BYTES;
+    public static final int COLOUR_OFFSET_BYTES = COLOUR_OFFSET_FLOATS * FLOAT_SIZE_BYTES;
+
     public static final int POSITION_STRIDE_BYTES = VERTEX_SIZE_BYTES;
     public static final int NORMAL_STRIDE_BYTES = VERTEX_SIZE_BYTES;
     public static final int TEXTURE_STRIDE_BYTES = VERTEX_SIZE_BYTES;
+    public static final int COLOUR_STRIDE_BYTES = VERTEX_SIZE_BYTES;
 
     public static final int ATTRIBUTE_LOCATION_POSITION = 0;
     public static final int ATTRIBUTE_LOCATION_NORMAL = 1;
     public static final int ATTRIBUTE_LOCATION_TEXTURE = 2;
+    public static final int ATTRIBUTE_LOCATION_COLOUR = 3;
 
     private int vao;
     private int vbo;
     private int ibo;
 
+    private float epsilon;
     private Vector3f cumulativeVertex;
     private Map<Material, List<Face3>> materialFaceMap = new HashMap<>();
     private Map<Material, List<Pair<Integer, Integer>>> materialRenderMap = new HashMap<>();
     List<Vertex> vertexList;
     List<Integer> indexList;
+    List<Face3> faceList;
 
-    protected float epsilon;
 
     private Mesh(float epsilon)
     {
         this.cumulativeVertex = new Vector3f();
         this.vertexList = new ArrayList<>();
         this.indexList = new ArrayList<>();
+        this.faceList = new ArrayList<>();
         this.epsilon = epsilon;
     }
 
@@ -72,6 +84,7 @@ public class Mesh
         glEnableVertexAttribArray(ATTRIBUTE_LOCATION_POSITION);
         glEnableVertexAttribArray(ATTRIBUTE_LOCATION_NORMAL);
         glEnableVertexAttribArray(ATTRIBUTE_LOCATION_TEXTURE);
+        glEnableVertexAttribArray(ATTRIBUTE_LOCATION_COLOUR);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 
@@ -93,12 +106,12 @@ public class Mesh
             }
         }
 
-//        glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         glDisableVertexAttribArray(ATTRIBUTE_LOCATION_POSITION);
         glDisableVertexAttribArray(ATTRIBUTE_LOCATION_NORMAL);
         glDisableVertexAttribArray(ATTRIBUTE_LOCATION_TEXTURE);
+        glDisableVertexAttribArray(ATTRIBUTE_LOCATION_COLOUR);
         glBindVertexArray(0);
     }
 
@@ -159,6 +172,16 @@ public class Mesh
     public Vector3f getCentre()
     {
         return new Vector3f(cumulativeVertex.x / (float) vertexList.size(), cumulativeVertex.y / (float) vertexList.size(), cumulativeVertex.z / (float) vertexList.size());
+    }
+
+    public List<Vertex> getVertices()
+    {
+        return this.vertexList;
+    }
+
+    public List<Face3> getFaceList()
+    {
+        return this.faceList;
     }
 
     public Mesh transform(Transformation transformation)
@@ -338,9 +361,9 @@ public class Mesh
         return this;
     }
 
-    public Mesh compile()
+    public Mesh setupFaces()
     {
-
+        //Sort all of the vertices so that all faceList using a material are together in the indices.
         this.vertexList.clear();
         this.indexList.clear();
 
@@ -355,6 +378,7 @@ public class Mesh
                 int endIndex = startIndex;
                 for (Face3 face : faces)
                 {
+                    this.faceList.add(face);
                     for (Vertex v : face.getVertices())
                     {
                         addVertex(v);
@@ -366,6 +390,13 @@ public class Mesh
                 startIndex = endIndex;
             }
         }
+
+        return this;
+    }
+
+    public Mesh compile()
+    {
+        this.setupFaces();
 
         float[] vertices = new float[vertexList.size() * VERTEX_SIZE_FLOATS];
         int[] indices = new int[indexList.size()];
@@ -399,7 +430,7 @@ public class Mesh
         return this;
     }
 
-    private void upload(Buffer buffer, int bufferTarget, int bufferId, int elementSizeBytes, int reserveElements, int offset)
+    public static void upload(Buffer buffer, int bufferTarget, int bufferId, int elementSizeBytes, int reserveElements, int offset)
     {
         glBindBuffer(bufferTarget, bufferId);
 
@@ -437,8 +468,9 @@ public class Mesh
         glVertexAttribPointer(ATTRIBUTE_LOCATION_POSITION, FLOATS_PER_POSITION, GL_FLOAT, false, POSITION_STRIDE_BYTES, POSITION_OFFSET_BYTES);
         glVertexAttribPointer(ATTRIBUTE_LOCATION_NORMAL, FLOATS_PER_NORMAL, GL_FLOAT, false, NORMAL_STRIDE_BYTES, NORMAL_OFFSET_BYTES);
         glVertexAttribPointer(ATTRIBUTE_LOCATION_TEXTURE, FLOATS_PER_TEXTURE, GL_FLOAT, false, TEXTURE_STRIDE_BYTES, TEXTURE_OFFSET_BYTES);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glVertexAttribPointer(ATTRIBUTE_LOCATION_COLOUR, FLOATS_PER_COLOUR, GL_FLOAT, false, COLOUR_STRIDE_BYTES, COLOUR_OFFSET_BYTES);
 
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         mesh.upload(null, GL_ARRAY_BUFFER, mesh.vbo, FLOAT_SIZE_BYTES, 2000, 0);
         mesh.upload(null, GL_ELEMENT_ARRAY_BUFFER, mesh.ibo, INT_SIZE_BYTES, 2000, 0);
@@ -457,13 +489,15 @@ public class Mesh
         Vector3f position;
         Vector3f normal;
         Vector2f texture;
+        Vector4f colour;
         private int index;
 
-        public Vertex(Vector3f position, Vector3f normal, Vector2f texture)
+        public Vertex(Vector3f position, Vector3f normal, Vector2f texture, Vector4f colour)
         {
             this.position = position;
             this.normal = normal;
             this.texture = texture;
+            this.colour = colour;
         }
 
         public Vertex(float[] data)
@@ -478,12 +512,18 @@ public class Mesh
             this.position = new Vector3f(data[0], data[1], data[2]);
             this.normal = new Vector3f(data[3], data[4], data[5]);
             this.texture = new Vector2f(data[6], data[7]);
+            this.colour = new Vector4f(data[8], data[9], data[10], data[11]);
         }
 
         public Vertex(Vertex vertex)
         {
-            this(new Vector3f(vertex.position), new Vector3f(vertex.normal), new Vector2f(vertex.texture));
+            this(new Vector3f(vertex.position), new Vector3f(vertex.normal), new Vector2f(vertex.texture), new Vector4f(vertex.colour));
             this.index = vertex.index;
+        }
+
+        public Vertex(Vector3f position, Vector3f normal, Vector2f texture)
+        {
+            this(position, normal, texture, new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
         }
 
         public Vector3f getPosition()
@@ -519,6 +559,16 @@ public class Mesh
             return this;
         }
 
+        public Vector4f getColour()
+        {
+            return colour;
+        }
+
+        public void setColour(Vector4f colour)
+        {
+            this.colour = colour;
+        }
+
         public int getIndex()
         {
             return index;
@@ -532,7 +582,7 @@ public class Mesh
 
         public float[] getData()
         {
-            return new float[]{position.x, position.y, position.z, normal.x, normal.y, normal.z, texture.x, texture.y};
+            return new float[]{position.x, position.y, position.z, normal.x, normal.y, normal.z, texture.x, texture.y, colour.x, colour.y, colour.z, colour.w};
         }
 
         public boolean equals(Vertex other, float epsilon)
@@ -594,6 +644,16 @@ public class Mesh
             return false;
         }
 
+        public boolean equalsColour(Vertex other)
+        {
+            if (other != null)
+            {
+                return this.colour.equals(other.colour);
+            }
+
+            return false;
+        }
+
         @Override
         public String toString()
         {
@@ -608,6 +668,8 @@ public class Mesh
         Vector3f getNormal();
 
         Vertex[] getVertices();
+
+        Triangle getCollidable(Vector3f translate);
     }
 
     public static class Face3 implements Face
@@ -701,6 +763,16 @@ public class Mesh
             return this.vertices;
         }
 
+        @Override
+        public Triangle getCollidable(Vector3f translate)
+        {
+            Vector3f a = Vector3f.add(getV1().position, translate, null);
+            Vector3f b = Vector3f.add(getV2().position, translate, null);
+            Vector3f c = Vector3f.add(getV3().position, translate, null);
+
+            return new Triangle(a, b, c);
+        }
+
         public Vertex[] getSharedVertices(Face3 other, float epsilon)
         {
             List<Vertex> shared = new ArrayList<>(3);
@@ -729,7 +801,7 @@ public class Mesh
     public static class Face4 implements Face
     {
         Material material;
-        private Vertex[] vertices = new Vertex[4]; //TODO: fill this array and invalidate this face if the two faces are not connected by 2 vertices.
+        private Vertex[] vertices = new Vertex[4]; //TODO: fill this array and invalidate this face if the two faceList are not connected by 2 vertices.
         Face3 f1;
         Face3 f2;
 
@@ -805,6 +877,12 @@ public class Mesh
         public Vertex[] getVertices()
         {
             return this.vertices;
+        }
+
+        @Override
+        public Triangle getCollidable(Vector3f translate)
+        {
+            return null;
         }
 
         @Override

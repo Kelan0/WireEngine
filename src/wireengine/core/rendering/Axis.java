@@ -115,6 +115,20 @@ public class Axis
         return dest;
     }
 
+    public Vector3f transform(Vector3f translation, Vector3f dest)
+    {
+        if (dest == null)
+        {
+            dest = new Vector3f();
+        }
+
+        dest.x += (translation.x * this.getLeft().x) + (translation.y * this.getUp().x) + (translation.z * this.getForward().x);
+        dest.y += (translation.x * this.getLeft().y) + (translation.y * this.getUp().y) + (translation.z * this.getForward().y);
+        dest.z += (translation.x * this.getLeft().z) + (translation.y * this.getUp().z) + (translation.z * this.getForward().z);
+
+        return dest;
+    }
+
     public Axis scale(Vector3f scale, Axis dest)
     {
         if (dest == null)
@@ -122,9 +136,9 @@ public class Axis
             dest = new Axis();
         }
 
-        dest.setX(new Vector3f(this.getX().x * scale.x, this.getX().y * scale.x, this.getX().z * scale.x));
-        dest.setY(new Vector3f(this.getY().x * scale.y, this.getY().y * scale.y, this.getY().z * scale.y));
-        dest.setZ(new Vector3f(this.getZ().x * scale.z, this.getZ().y * scale.z, this.getZ().z * scale.z));
+        dest.setX(new Vector3f(this.getX().x * scale.x, this.getX().y * scale.y, this.getX().z * scale.z));
+        dest.setY(new Vector3f(this.getY().x * scale.x, this.getY().y * scale.y, this.getY().z * scale.z));
+        dest.setZ(new Vector3f(this.getZ().x * scale.x, this.getZ().y * scale.y, this.getZ().z * scale.z));
 
         return dest;
     }

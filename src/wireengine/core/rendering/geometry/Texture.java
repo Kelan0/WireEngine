@@ -100,6 +100,7 @@ public final class Texture
         glActiveTexture(this.textureUnit);
         glBindTexture(this.textureTarget, this.textureID);
         shader.setUniformVector3f("textureScale", this.scale);
+        shader.setUniformBoolean("useTexture", true);
     }
 
     public void destroy()

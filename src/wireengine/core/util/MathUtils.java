@@ -2,7 +2,6 @@ package wireengine.core.util;
 
 import org.lwjgl.util.vector.*;
 import wireengine.core.rendering.Axis;
-import wireengine.core.rendering.geometry.Mesh;
 
 /**
  * @author Kelan
@@ -29,12 +28,47 @@ public class MathUtils
         return Matrix3f.transform(quaternionToMatrix3f(quat, null), vec, dest);
     }
 
+    public static float getAngleVector3f(Vector3f a, Vector3f b)
+    {
+        return (float) Math.acos(Vector3f.dot(a, b) / a.length() * b.length());
+    }
+
     public static Vector3f interpolate(Vector3f v1, Vector3f v2, double d)
     {
         float x = (float) (v1.x + d * (v2.x - v1.x));
         float y = (float) (v1.y + d * (v2.y - v1.y));
         float z = (float) (v1.z + d * (v2.z - v1.z));
         return new Vector3f(x, y, z);
+    }
+
+    public static float dotPerp(Vector2f v1, Vector2f v2)
+    {
+        return v1.x * v2.y - v1.y * v2.x;
+    }
+
+    public static void generateComplementBasis(Vector3f u, Vector3f v, Vector3f w)
+    {
+        float invLength;
+
+        if (Math.abs(w.x) >= Math.abs(w.y))
+        {
+            invLength = (float) (1.0F / Math.sqrt(w.x * w.x + w.z * w.z));
+            u.x = -w.z * invLength;
+            u.y = 0.0F;
+            u.z = +w.x * invLength;
+            v.x = w.y * u.z;
+            v.y = w.z * u.x - w.x * u.z;
+            v.z = -w.y * u.x;
+        } else
+        {
+            invLength = (float) (1.0F / Math.sqrt(w.y * w.y + w.z * w.z));
+            u.x = 0.0F;
+            u.y = +w.z * invLength;
+            u.z = -w.y * invLength;
+            v.x = w.y * u.z - w.z * u.y;
+            v.y = -w.x * u.z;
+            v.z = w.x * u.y;
+        }
     }
 
     public static Quaternion axisAngleToQuaternion(Vector3f axis, float radians, Quaternion dest)
@@ -44,7 +78,10 @@ public class MathUtils
             dest = new Quaternion();
         }
 
-        dest.setFromAxisAngle(new Vector4f(axis.x, axis.y, axis.z, radians));
+        if (radians != 0.0F && axis.lengthSquared() > 0.0F)
+        {
+            dest.setFromAxisAngle(new Vector4f(axis.x, axis.y, axis.z, radians));
+        }
 
         return dest;
     }
@@ -188,22 +225,75 @@ public class MathUtils
 
     public static Vector3f averageVector3f(Vector3f... vectors)
     {
-        float x = 0.0F;
-        float y = 0.0F;
-        float z = 0.0F;
+        if (vectors != null && vectors.length > 0)
+        {
+            float x = 0.0F;
+            float y = 0.0F;
+            float z = 0.0F;
 
-        if (vectors == null || vectors.length <= 0)
-        {
-            vectors = new Vector3f[1];
-        } else
-        {
             for (Vector3f v : vectors)
             {
                 x += v.x;
                 y += v.y;
                 z += v.z;
             }
+            return new Vector3f(x / vectors.length, y / vectors.length, z / vectors.length);
         }
-        return new Vector3f(x / vectors.length, y / vectors.length, z / vectors.length);
+
+        return null;
+    }
+
+    public static Vector3f quaternionToEuler(Quaternion orientation, Vector3f dest)
+    {
+        if (dest == null)
+        {
+            dest = new Vector3f();
+        }
+
+        dest.x = (float) Math.atan2(2.0F * orientation.x * orientation.w - 2.0F * orientation.y * orientation.z, 1.0F - 2.0F * orientation.x * orientation.x - 2.0F * orientation.z * orientation.z);
+        dest.y = (float) Math.atan2(2.0F * orientation.y * orientation.w - 2.0F * orientation.x * orientation.z, 1.0F - 2.0F * orientation.y * orientation.y - 2.0F * orientation.z * orientation.z);
+        dest.z = (float) Math.asin(2.0F * orientation.x * orientation.y + 2.0F * orientation.z * orientation.w);
+
+        return dest;
+    }
+
+    public static Vector3f getClosest(Vector3f vector, Vector3f[] vectors)
+    {
+        Vector3f closest = null;
+        float distance = Float.MAX_VALUE;
+
+        for (Vector3f v : vectors)
+        {
+            float a = Vector3f.sub(v, vector, null).lengthSquared();
+
+            if (a < distance)
+            {
+                closest = v;
+                distance = a;
+            }
+        }
+
+        return closest;
+    }
+
+    public static float clamp(float f, float min, float max)
+    {
+        min = Math.min(min, max);
+        max = Math.max(min, max);
+        return f < min ? min : f > max ? max : f;
+    }
+
+    public static float sign(float f)
+    {
+        if (f > 0.0F)
+        {
+            return 1.0F;
+        } else if (f < 0.0F)
+        {
+            return -1.0F;
+        } else
+        {
+            return 0.0F;
+        }
     }
 }

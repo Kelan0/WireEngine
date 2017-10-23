@@ -4,6 +4,7 @@ import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Quaternion;
 import org.lwjgl.util.vector.Vector3f;
 import wireengine.core.util.MathUtils;
+import wireengine.testgame.TestGame;
 
 /**
  * @author Kelan
@@ -46,6 +47,9 @@ public class Camera
         if (position != null)
         {
             this.position = position;
+        } else
+        {
+            System.out.println("a");
         }
         return this;
     }
@@ -61,21 +65,22 @@ public class Camera
 
     public Camera translateAxis(Vector3f translation, Axis axis)
     {
-        Vector3f axisTranslation = new Vector3f();
+        axis.transform(translation, this.position);
+        return this;
+    }
 
-        axisTranslation.x += (translation.x * axis.getLeft().x) + (translation.y * axis.getUp().x) + (translation.z * axis.getForward().x);
-        axisTranslation.y += (translation.x * axis.getLeft().y) + (translation.y * axis.getUp().y) + (translation.z * axis.getForward().y);
-        axisTranslation.z += (translation.x * axis.getLeft().z) + (translation.y * axis.getUp().z) + (translation.z * axis.getForward().z);
-
-        this.translate(axisTranslation);
+    public Camera setOrientation(Quaternion orientation)
+    {
+        if (orientation != null)
+        {
+            this.orientation = orientation;
+        }
         return this;
     }
 
     public Camera rotateAxis(Vector3f axis, float radians)
     {
-//        System.out.println("rotating camera " + axis + " " + radians);
         Quaternion rotation = MathUtils.axisAngleToQuaternion(axis, radians, null);
-//        this.axis.rotate(rotation, null);
 
         Quaternion.mul(rotation, orientation, orientation);
         orientation.normalise();
@@ -98,9 +103,29 @@ public class Camera
         return rotateAxis(this.getAxis().getZ(), radians);
     }
 
+    public Quaternion getOrientation()
+    {
+        return orientation;
+    }
+
     public Vector3f getPosition()
     {
         return position;
+    }
+
+    public void setOrthoDirection(Vector3f orthoDirection)
+    {
+        if (orthoDirection.lengthSquared() > 0.0F)
+        {
+            TestGame.getInstance().getWorldRenderer().setOrthographicProjection(true);
+
+            Vector3f forward = this.getAxis().getForward();
+
+            this.rotateAxis(Vector3f.cross(orthoDirection, forward, null), MathUtils.getAngleVector3f(orthoDirection, forward));
+        } else
+        {
+            TestGame.getInstance().getWorldRenderer().setOrthographicProjection(false);
+        }
     }
 
     public Axis getAxis()
@@ -130,7 +155,7 @@ public class Camera
 
     public Matrix4f getViewMatrix()
     {
-        return MathUtils.quaternionToMatrix4f(this.orientation.normalise(this.orientation), null).translate(this.position);
+        return MathUtils.quaternionToMatrix4f(this.orientation, null).translate(this.position.negate(null));
     }
 
     @Override

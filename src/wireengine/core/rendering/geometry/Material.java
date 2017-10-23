@@ -41,7 +41,10 @@ public class Material
         shader.setUniformVector3f("diffuseColour", this.diffuseColour);
         shader.setUniformVector3f("specularColour", new Vector3f(this.specularColour));
 
-        diffuseTexture.bind(shader);
+        if (diffuseTexture != null)
+        {
+            diffuseTexture.bind(shader);
+        }
 //        specularTexture.bind(shader);
 //        ambientTexture.bind(shader);
     }

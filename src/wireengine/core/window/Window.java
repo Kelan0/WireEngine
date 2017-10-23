@@ -51,7 +51,7 @@ public class Window
         GLFW.glfwSetScrollCallback(windowId, InputHandler.scrollWheel);
 
         GLFW.glfwMakeContextCurrent(windowId);
-        GL.createCapabilities();
+        GL.createCapabilities(true);
         GLFW.glfwSwapInterval(0);
 
         InputHandler.init(this.windowId);
@@ -60,7 +60,6 @@ public class Window
 
     public void update(double delta)
     {
-        GL.createCapabilities();
         GL11.glClearColor(0.0F, 0.0F, 0.0F, 0.0F);
 
         if (!this.shouldClose())

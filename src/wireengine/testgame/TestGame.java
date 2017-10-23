@@ -1,18 +1,14 @@
 package wireengine.testgame;
 
-import sun.security.action.GetPropertyAction;
 import wireengine.core.GameSettings;
 import wireengine.core.WireEngine;
 import wireengine.core.event.events.TickEvent;
 import wireengine.core.level.Level;
 import wireengine.core.level.LevelLoader;
 import wireengine.core.rendering.renderer.WorldRenderer;
-import wireengine.core.util.StringUtils;
 import wireengine.core.window.InputHandler;
 
-import java.io.File;
 import java.io.IOException;
-import java.security.AccessController;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F1;
@@ -23,6 +19,7 @@ import static wireengine.core.WireEngine.engine;
  */
 public class TestGame extends Game
 {
+    private static TestGame instance;
     private WorldRenderer worldRenderer;
     private String[] gameSettings;
     private Level level;
@@ -45,6 +42,9 @@ public class TestGame extends Game
         {
             this.levelLoader = new LevelLoader();
             this.level = levelLoader.loadLevel("res/level/level.dat");
+
+            WireEngine.engine().getPhysicsEngine().addPhysicsObject(player);
+            WireEngine.engine().getPhysicsEngine().addPhysicsObject(level);
         } catch (IOException e)
         {
             e.printStackTrace();
@@ -98,8 +98,19 @@ public class TestGame extends Game
         return level;
     }
 
+    public WorldRenderer getWorldRenderer()
+    {
+        return worldRenderer;
+    }
+
+    public static TestGame getInstance()
+    {
+        return instance;
+    }
+
     public static void main(String[] args)
     {
-        WireEngine.createEngine(new TestGame(args));
+        TestGame.instance = new TestGame(args);
+        WireEngine.createEngine(TestGame.instance);
     }
 }
