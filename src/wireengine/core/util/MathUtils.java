@@ -33,12 +33,53 @@ public class MathUtils
         return (float) Math.acos(Vector3f.dot(a, b) / a.length() * b.length());
     }
 
+    public static float interpolate(float v1, float v2, double d)
+    {
+        return interpolate(new Vector2f(v1, 0.0F), new Vector2f(v2, 0.0F), d).x;
+    }
+
+    public static Vector2f interpolate(Vector2f v1, Vector2f v2, double d)
+    {
+        return new Vector2f(interpolate(new Vector3f(v1.x, v1.y, 0.0F), new Vector3f(v2.x, v2.y, 0.0F), d));
+    }
+
     public static Vector3f interpolate(Vector3f v1, Vector3f v2, double d)
+    {
+        return new Vector3f(interpolate(new Vector4f(v1.x, v1.y, v1.z, 0.0F), new Vector4f(v2.x, v2.y, v2.z, 0.0F), d));
+    }
+
+    public static Vector3f direction(Vector3f a, Vector3f b)
+    {
+        return Vector3f.sub(b, a, null);
+    }
+
+    public static Vector3f mul(Vector3f a, Vector3f b)
+    {
+        return new Vector3f(a.x * b.x, a.y * b.y, a.z * b.z);
+    }
+
+    public static Vector3f div(Vector3f a, Vector3f b)
+    {
+        return new Vector3f(a.x / b.x, a.y / b.y, a.z / b.z);
+    }
+
+    public static float distanceSquared(Vector3f a, Vector3f b)
+    {
+        return direction(a, b).lengthSquared();
+    }
+
+    public static float distance(Vector3f a, Vector3f b)
+    {
+        return direction(a, b).length();
+    }
+
+    public static Vector4f interpolate(Vector4f v1, Vector4f v2, double d)
     {
         float x = (float) (v1.x + d * (v2.x - v1.x));
         float y = (float) (v1.y + d * (v2.y - v1.y));
         float z = (float) (v1.z + d * (v2.z - v1.z));
-        return new Vector3f(x, y, z);
+        float w = (float) (v1.w + d * (v2.w - v1.w));
+        return new Vector4f(x, y, z, w);
     }
 
     public static float dotPerp(Vector2f v1, Vector2f v2)
@@ -295,5 +336,21 @@ public class MathUtils
         {
             return 0.0F;
         }
+    }
+
+    public static Vector3f setLength(float length, Vector3f vector, Vector3f dest)
+    {
+        if (dest == null)
+        {
+            dest = new Vector3f();
+        }
+
+        vector.normalise(dest).scale(length);
+        return dest;
+    }
+
+    public static Vector3f abs(Vector3f vector)
+    {
+        return new Vector3f(Math.abs(vector.x), Math.abs(vector.y),Math.abs(vector.z));
     }
 }

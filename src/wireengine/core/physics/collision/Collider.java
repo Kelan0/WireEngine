@@ -1,41 +1,18 @@
 package wireengine.core.physics.collision;
 
 import org.lwjgl.util.vector.Vector3f;
-import org.lwjgl.util.vector.Vector4f;
-import wireengine.core.rendering.ShaderProgram;
-import wireengine.core.rendering.renderer.DebugRenderer;
-import wireengine.core.util.Constants;
-
-import static org.lwjgl.opengl.GL11.GL_LINES;
+import wireengine.core.physics.collision.colliders.*;
 
 /**
  * @author Kelan
  */
-public abstract class Collider
+public abstract class Collider<T extends Collider<T>>
 {
     public final ColliderType colliderType;
 
-    Collider(ColliderType colliderType)
+    protected Collider(ColliderType colliderType)
     {
         this.colliderType = colliderType;
-    }
-
-    public CollisionHandler getCollision(Collider collider, float epsilon)
-    {
-        CollisionHandler collision = new CollisionHandler();
-
-        Vector3f closestOnThis = this.getClosestPoint(collider.getCentre());
-        Vector3f closestOnThat = collider.getClosestPoint(this.getCentre());
-
-        //Collision is true if the closest point on either collider is inside the other collider.
-        if (this.pointIntersects(closestOnThat) || collider.pointIntersects(closestOnThis))
-        {
-            collision.didHit = true;
-            collision.hitPosition = closestOnThis;
-            collision.hitNormal = this.getNormalAt(closestOnThis);
-        }
-
-        return collision;
     }
 
     public Vector3f getCentre()
@@ -43,11 +20,27 @@ public abstract class Collider
         return getPosition();
     }
 
-    public abstract boolean pointIntersects(Vector3f point);
+    public abstract CollisionState.CollisionComponent<T> getCollision(AxisAlignedBB collider);
 
-    public abstract Vector3f getClosestPoint(Vector3f point);
+    public abstract CollisionState.CollisionComponent<T> getCollision(Ellipsoid collider);
 
-    public abstract Vector3f getNormalAt(Vector3f point);
+    public abstract CollisionState.CollisionComponent<T> getCollision(Frustum collider);
+
+    public abstract CollisionState.CollisionComponent<T> getCollision(OrientedBB collider);
+
+    public abstract CollisionState.CollisionComponent<T> getCollision(Plane collider);
+
+    public abstract CollisionState.CollisionComponent<T> getCollision(Ray collider);
+
+    public abstract CollisionState.CollisionComponent<T> getCollision(Sphere collider);
+
+    public abstract CollisionState.CollisionComponent<T> getCollision(Triangle collider);
+
+    public abstract boolean pointIntersects(Vector3f collider);
+
+    public abstract Vector3f getClosestPoint(Vector3f collider);
+
+    public abstract Vector3f getNormalAt(Vector3f collider);
 
     public abstract Vector3f getPosition();
 
@@ -60,6 +53,6 @@ public abstract class Collider
 
     public enum ColliderType
     {
-        PLANE, SPHERE, CYLINDER, CONE, QUAD, TRIANGLE, AABB, OBB, FRUSTUM, RAY, COMPOSITE
+        PLANE, SPHERE, CYLINDER, CONE, QUAD, TRIANGLE, AABB, OBB, FRUSTUM, RAY, ELIPSOID, COMPOSITE
     }
 }

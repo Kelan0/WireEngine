@@ -1,61 +1,46 @@
 package wireengine.core.player;
 
 import org.lwjgl.util.vector.Vector3f;
-import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
 import wireengine.core.physics.PhysicsObject;
-import wireengine.core.physics.collision.Collider;
-import wireengine.core.physics.collision.CollisionHandler;
-import wireengine.core.physics.collision.Cylinder;
-import wireengine.core.physics.collision.Triangle;
+import wireengine.core.physics.collision.colliders.Ellipsoid;
 import wireengine.core.rendering.Axis;
 import wireengine.core.rendering.Camera;
 import wireengine.core.rendering.ShaderProgram;
-import wireengine.core.rendering.renderer.DebugRenderer;
 import wireengine.core.util.MathUtils;
 import wireengine.core.window.InputHandler;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11.GL_LINES;
-import static wireengine.core.physics.PhysicsEngine.GRAVITY;
 import static wireengine.core.util.Constants.HALF_PI;
 import static wireengine.core.util.Constants.RADIANS;
 
 /**
  * @author Kelan
  */
-public class Player implements PhysicsObject
+public class Player
 {
     private final Camera camera;
-    private final float playerSize = 0.5F;
+    private final float playerSize = 0.1F;
     private final float standHeight = 1.3F;
     private final float crouchHeight = 0.7F;
-    private final float walkSpeed = 3.8F;
+    private final float walkSpeed = 3.6F;
     private final float crouchSpeed = 1.2F;
     private float currentHeight = standHeight;
     private float currentSpeed = walkSpeed; //meters per second.
     private float mouseSpeed = 0.6F; //arbitrary value based on DPI. TODO, calculate a proper value for this base don mouse DPI.
-    private boolean onGround = false;
+    private boolean canFly = false;
 
-    private Cylinder collider; //Change this to some spheres. Cylinders are awful.
-    private Vector3f moveDirection;
-    private Vector3f position;
-    private Vector3f velocity;
-    private Vector3f acceleration;
-    private float mass = 70.0F;
+    private PhysicsObject physicsObject;
 
     public Player()
     {
         this.camera = new Camera(Axis.getyAxisOnly());
-        this.moveDirection = new Vector3f();
-        this.position = new Vector3f(0.0F, 0.0F, 0.0F);
-        this.velocity = new Vector3f();
-        this.acceleration = new Vector3f();
+    }
 
-        this.collider = new Cylinder(this.getHeadPosition(), new Vector3f(0.0F, -1.0F, 0.0F), this.playerSize, this.currentHeight);
+    public void init()
+    {
+        this.physicsObject = new PhysicsObject<>(new Ellipsoid(new Vector3f(0.0F, this.currentHeight * 0.5F, 0.0F), new Vector3f(playerSize, currentHeight, playerSize)), 70.0F);
+        WireEngine.engine().getPhysicsEngine().addPhysicsObject(this.physicsObject);
     }
 
     public void render(ShaderProgram shaderProgram)
@@ -63,35 +48,8 @@ public class Player implements PhysicsObject
         camera.setPosition(this.getHeadPosition());
         camera.render(shaderProgram);
 
-        collider.renderDebug(shaderProgram, new Vector4f(0.0f, 1.0f, 0.0f, 1.0f));
-
-        DebugRenderer.getInstance().begin(GL_LINES);
-        DebugRenderer.getInstance().addColour(new Vector4f(0.0F, 0.0F, 1.0F, 1.0F));
-        for (Collider c : WireEngine.engine().getGame().getLevel().getSceneCollider().getColliders())
-        {
-            Triangle triangle = (Triangle) c;
-
-            CollisionHandler collision = this.collider.getCollision(triangle, 0.001F);
-
-            if (collision.didHit())
-            {
-                System.out.println("Colliding with wall. " + collision.string);
-                triangle.renderDebug(shaderProgram, new Vector4f(1.0F, 0.0F, 0.0F, 1.0F), GL_LINES);
-
-                Vector3f[] hitdata = (Vector3f[]) collision.getHitData();
-
-                for (int i = 0, j = hitdata.length - 1; i < hitdata.length; j = i++)
-                {
-                    System.out.println(hitdata[i] + " -> " + hitdata[j]);
-                    DebugRenderer.getInstance().addVertex(hitdata[i]);
-                    DebugRenderer.getInstance().addVertex(hitdata[j]);
-                }
-            }
-        }
-        DebugRenderer.getInstance().end(shaderProgram);
+//        physicsObject.getCollider().renderDebug(shaderProgram, new Vector4f(0.0f, 1.0f, 0.0f, 1.0f));
     }
-
-    private Vector3f v = new Vector3f();
 
     public void handleInput(double delta)
     {
@@ -154,7 +112,7 @@ public class Player implements PhysicsObject
             toMove.x++;
         }
 
-        float numSeconds = 0.3F; //Number of seconds it takes to trasition between fully crouched/uncrouched.
+        float numSeconds = 0.2F; //Number of seconds it takes to trasition between fully crouched/uncrouched.
         if (InputHandler.keyDown(GLFW_KEY_LEFT_CONTROL))
         {
             this.currentSpeed = crouchSpeed;
@@ -165,23 +123,35 @@ public class Player implements PhysicsObject
             this.currentHeight += delta / numSeconds;
         }
 
-        if (InputHandler.keyDown(GLFW_KEY_LEFT_SHIFT) && isOnGround())
+        if (this.physicsObject.isOnGround())
         {
-            float jumpHeight = 3.0F;
-            this.velocity.y = -jumpHeight * jumpHeight;
-        }
-        if (InputHandler.keyDown(GLFW_KEY_SPACE) && isOnGround())
+            if (InputHandler.keyDown(GLFW_KEY_SPACE))
+            {
+                float jumpHeight = 2.0F;
+                this.physicsObject.getVelocity().y = jumpHeight;
+            }
+        } else if (canFly)
         {
-            float jumpHeight = 3.0F;
-            this.velocity.y = jumpHeight * jumpHeight;
+            if (InputHandler.keyDown(GLFW_KEY_SPACE))
+            {
+                toMove.y++;
+            }
+
+            if (InputHandler.keyDown(GLFW_KEY_LEFT_SHIFT))
+            {
+                toMove.y--;
+            }
         }
 
         this.currentHeight = Math.max(this.currentHeight, this.crouchHeight);
         this.currentHeight = Math.min(this.currentHeight, this.standHeight);
 
-        if (toMove.lengthSquared() > 0.01F)
+        //The axis nullifies the y-axis, so the y direction of toMove has to be added separately.
+        Vector3f.add(new Vector3f(0.0F, toMove.y, 0.0F), this.getAxis().transform(toMove, null), toMove);
+        if (toMove.lengthSquared() > 0.0F)
         {
-            this.getAxis().transform((Vector3f) toMove.normalise(null).scale(this.currentSpeed), this.moveDirection);
+            toMove.normalise().scale(currentSpeed);
+            this.physicsObject.applyAcceleration(toMove);
         }
 
         if (InputHandler.isCursorGrabbed())
@@ -193,122 +163,61 @@ public class Player implements PhysicsObject
             camera.rotateYaw(yaw);
         }
 
-        if (InputHandler.mouseButtonDown(GLFW_MOUSE_BUTTON_1))
-        {
-            if (v == null)
-            {
-                this.v = Vector3f.sub(this.collider.getPosition(), this.getHeadPosition(), null);
-            }
-            this.collider.setPosition(Vector3f.add(this.getHeadPosition(), v, null));
-        }
-
-        if (InputHandler.mouseButtonReleased(GLFW_MOUSE_BUTTON_1))
-        {
-            this.v = null;
-        }
-
         Vector3f euler = MathUtils.quaternionToEuler(camera.getOrientation(), null);
         camera.rotatePitch((float) (euler.x > +HALF_PI ? +HALF_PI - euler.x : (euler.x < -HALF_PI ? -HALF_PI - euler.x : 0.0F)));
     }
 
-    @Override
-    public void tick(double delta)
+    public synchronized Vector3f getFeetPosition()
     {
-        if (onGround)
-        {
-            this.velocity.x += this.moveDirection.x * this.currentSpeed * delta;
-            this.velocity.y += this.moveDirection.y * this.currentSpeed * delta;
-            this.velocity.z += this.moveDirection.z * this.currentSpeed * delta;
+        Vector3f centre = this.physicsObject.getPosition();
 
-            float g = Math.max(Math.abs(GRAVITY), 1.0F); //zero gravity not allowed. Divide-by-zero error.
-            float drag = (float) Math.pow(0.01 / (this.mass * g), delta);
-            this.velocity.x *= drag;
-            this.velocity.y *= drag;
-            this.velocity.z *= drag;
-        } else
-        {
-            //air resistance.
-        }
-
-//        Vector3f pos = new Vector3f(this.position.x, this.position.y + (this.currentHeight + 0.075F) * 0.5F, this.position.z);
-//        Vector3f.add(this.camera.getAxis().getBackward(), pos, pos);
-//        this.collider.setPosition(pos);
-//        this.collider.setHeight(this.currentHeight + 0.075F);
-
-        this.moveDirection = new Vector3f();
-
-//        this.colliding.clear();
-        this.onGround = true;
-//        for (Collider c : WireEngine.engine().getGame().getLevel().getSceneCollider().getColliders())
-//        {
-//            Triangle triangle = (Triangle) c;
-//            CollisionHandler collision = this.collider.getCollision(triangle, 0.001F);
-//
-//            if (collision.didHit())
-//            {
-//                System.out.println("Colliding with wall.");
-//                this.colliding.add(triangle);
-//            }
-//        }
-    }
-
-    @Override
-    public synchronized Vector3f getPosition()
-    {
-        return this.position;
+        return Vector3f.sub(centre, new Vector3f(0.0F, currentHeight * 0.5F, 0.0F), null);
     }
 
     public synchronized Vector3f getHeadPosition()
     {
-        return Vector3f.add(this.getPosition(), new Vector3f(0.0F, this.currentHeight, 0.0F), null);
+        Vector3f centre = this.physicsObject.getPosition();
+
+        return Vector3f.add(centre, new Vector3f(0.0F, currentHeight * 0.5F, 0.0F), null);
     }
 
-    public synchronized Vector3f getPosition(float partialTicks)
+    public synchronized Vector3f getFeetPosition(float partialTicks)
     {
-        float x = this.getPosition().x + this.getVelocity().x * partialTicks;
-        float y = this.getPosition().y + this.getVelocity().y * partialTicks;
-        float z = this.getPosition().z + this.getVelocity().z * partialTicks;
+        float x = this.getFeetPosition().x + this.getVelocity().x * partialTicks;
+        float y = this.getFeetPosition().y + this.getVelocity().y * partialTicks;
+        float z = this.getFeetPosition().z + this.getVelocity().z * partialTicks;
 
         return new Vector3f(x, y, z);
     }
 
     public synchronized Vector3f getHeadPosition(float partialTicks)
     {
-        return Vector3f.add(this.getPosition(partialTicks), new Vector3f(0.0F, this.currentHeight, 0.0F), null);
+
+        float x = this.getHeadPosition().x + this.getVelocity().x * partialTicks;
+        float y = this.getHeadPosition().y + this.getVelocity().y * partialTicks;
+        float z = this.getHeadPosition().z + this.getVelocity().z * partialTicks;
+
+        return new Vector3f(x, y, z);
     }
 
-    @Override
     public synchronized Vector3f getVelocity()
     {
-        return this.velocity;
+        return this.physicsObject.getVelocity();
     }
 
-    @Override
     public synchronized Vector3f getAcceleration()
     {
-        return this.acceleration;
+        return this.physicsObject.getAcceleration();
     }
 
-    @Override
     public float getMass()
     {
-        return mass;
-    }
-
-    @Override
-    public boolean isStatic()
-    {
-        return false;
+        return this.physicsObject.getMass();
     }
 
     public synchronized boolean isOnGround()
     {
-        return this.onGround;
-    }
-
-    public Collider getCollider()
-    {
-        return this.collider;
+        return this.physicsObject.isOnGround();
     }
 
     public Axis getAxis()
@@ -327,5 +236,40 @@ public class Player implements PhysicsObject
 
         return axis;
     }
+
+//    @Override
+//    public void tick(double delta)
+//    {
+//        Level level = WireEngine.engine().getGame().getLevel();
+//        this.collider.setPosition(new Vector3f(this.position.x, this.position.y + (this.currentHeight + 0.1F) * 0.5F, this.position.z));
+//        this.collider.getRadius().y = (this.currentHeight + 0.1F) * 0.5F;
+//
+//        float friction = 8.6F;
+//
+//        if (moveDirection.lengthSquared() > 0.0)
+//        {
+//            this.velocity.x += this.moveDirection.x * currentSpeed * delta;
+//            this.velocity.y += this.moveDirection.y * currentSpeed * delta;
+//            this.velocity.z += this.moveDirection.z * currentSpeed * delta;
+//
+//            float dot = (Vector3f.dot(this.velocity.normalise(null), this.moveDirection.normalise(null)) + 1.0F) * 0.5F; // 1 if we are moving in the same direction, 0 if we are moving exactly opposite to the velocity.
+//            friction = MathUtils.interpolate(0.5F, friction, 1.0F - dot); //This avoids sliding when changing direction without stopping.
+//            this.moveDirection = new Vector3f();
+//        }
+//
+//        this.velocity = level.collideWith(this.collider, this.velocity);
+//
+//        if (this.velocity.y == 0.0F)
+//        {
+//            onGround = true;
+//
+//            velocity.x /= (1.0F + friction * delta);
+//            velocity.y /= (1.0F + friction * delta);
+//            velocity.z /= (1.0F + friction * delta);
+//        } else
+//        {
+//            onGround = false;
+//        }
+//    }
 }
 

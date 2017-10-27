@@ -33,6 +33,7 @@ public final class InputHandler
     private static double scrollY;
     private static double scrollX;
     private static boolean grabCursor = false;
+    private static double[][] mousePosition = new double[2][1];
 
     protected static GLFWKeyCallback keyboard = new GLFWKeyCallback()
     {
@@ -80,7 +81,7 @@ public final class InputHandler
         WireEngine.engine().handleInput(delta);
 
         if (grabCursor)
-            glfwSetCursorPos(window, WireEngine.engine().getRenderEngine().getWindow().getWidth() / 2, WireEngine.engine().getRenderEngine().getWindow().getHeight() / 2);
+            glfwSetCursorPos(window, WireEngine.engine().getRenderEngine().getWindow().getWidth() / 2.0, WireEngine.engine().getRenderEngine().getWindow().getHeight() / 2.0);
     }
 
     private static void resetKeyboard()
@@ -157,11 +158,8 @@ public final class InputHandler
 
     public static Vector2f cursorPosition()
     {
-        DoubleBuffer x = BufferUtils.createDoubleBuffer(1);
-        DoubleBuffer y = BufferUtils.createDoubleBuffer(1);
-        glfwGetCursorPos(window, x, y);
-
-        return Vector2f.sub(new Vector2f((float) x.get(0), (float) y.get(0)), new Vector2f(WireEngine.engine().getRenderEngine().getWindow().getWidth() / 2, WireEngine.engine().getRenderEngine().getWindow().getHeight() / 2), null);
+        glfwGetCursorPos(window, mousePosition[0], mousePosition[1]);
+        return Vector2f.sub(new Vector2f((float) mousePosition[0][0], (float) mousePosition[1][0]), new Vector2f(WireEngine.engine().getRenderEngine().getWindow().getWidth() / 2.0F, WireEngine.engine().getRenderEngine().getWindow().getHeight() / 2.0F), null);
     }
 
     public static double getMouseScrollY()
@@ -178,7 +176,7 @@ public final class InputHandler
     {
         if (grabbed && !grabCursor)
         {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 //            glfwSetCursor(window, GLFW_CURSOR_HIDDEN);
         }
 

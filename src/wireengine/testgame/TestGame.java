@@ -42,9 +42,8 @@ public class TestGame extends Game
         {
             this.levelLoader = new LevelLoader();
             this.level = levelLoader.loadLevel("res/level/level.dat");
+            this.player.init();
 
-            WireEngine.engine().getPhysicsEngine().addPhysicsObject(player);
-            WireEngine.engine().getPhysicsEngine().addPhysicsObject(level);
         } catch (IOException e)
         {
             e.printStackTrace();

@@ -3,14 +3,16 @@ package wireengine.core.level;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
-import wireengine.core.WireEngine;
 import wireengine.core.physics.PhysicsObject;
 import wireengine.core.physics.collision.Collider;
 import wireengine.core.physics.collision.CollisionHandler;
-import wireengine.core.physics.collision.CompositeCollider;
-import wireengine.core.physics.collision.Triangle;
+import wireengine.core.physics.collision.CollisionState;
+import wireengine.core.physics.collision.colliders.Triangle;
 import wireengine.core.rendering.ShaderProgram;
-import wireengine.core.rendering.geometry.*;
+import wireengine.core.rendering.geometry.Mesh;
+import wireengine.core.rendering.geometry.MeshHelper;
+import wireengine.core.rendering.geometry.Model;
+import wireengine.core.rendering.geometry.Transformation;
 import wireengine.core.rendering.renderer.DebugRenderer;
 import wireengine.core.window.InputHandler;
 
@@ -23,9 +25,9 @@ import static org.lwjgl.opengl.GL11.*;
 /**
  * @author Kelan
  */
-public class Level implements PhysicsObject
+public class Level
 {
-    private CompositeCollider sceneCollider;
+    private List<Triangle> triangles = new ArrayList<>();
     private Model staticScene;
     private List<Model> dynamicScene;
     private boolean renderHitbox;
@@ -43,7 +45,19 @@ public class Level implements PhysicsObject
             Mesh sceneMesh = MeshHelper.parseObj("res/level/testlevel/testlevel.obj");
 
             this.staticScene = new Model(sceneMesh, new Transformation());
-            this.sceneCollider = CollisionHandler.calculateCollider(sceneMesh);
+
+            for (Mesh.Face3 face : sceneMesh.getFaceList())
+            {
+                Vector3f p1 = face.getV1().getPosition();
+                Vector3f p2 = face.getV2().getPosition();
+                Vector3f p3 = face.getV3().getPosition();
+
+                Triangle triangle = new Triangle(p1, p2, p3);
+                this.triangles.add(triangle);
+            }
+
+//            WireEngine.engine().getPhysicsEngine().addPhysicsObject(this.physicsObject);
+
         } catch (IOException e)
         {
             e.printStackTrace();
@@ -51,11 +65,6 @@ public class Level implements PhysicsObject
     }
 
     public void cleanup()
-    {
-
-    }
-
-    public void physics(double delta)
     {
 
     }
@@ -79,30 +88,43 @@ public class Level implements PhysicsObject
             glEnable(GL_LINE_SMOOTH);
             glDisable(GL_DEPTH_TEST);
             DebugRenderer.getInstance().begin(GL_LINES);
-            for (Collider collider : this.sceneCollider.getColliders())
+            for (Triangle tri : this.triangles)
             {
-                if (collider.colliderType.equals(Collider.ColliderType.TRIANGLE))
-                {
-                    Triangle tri = (Triangle) collider;
+                Vector3f p1 = tri.getPosition();
+                Vector3f p2 = Vector3f.add(tri.getNormalAt(null), p1, null);
 
-                    Vector3f p1 = tri.getPosition();
-                    Vector3f p2 = Vector3f.add(tri.getNormalAt(null), p1, null);
+                DebugRenderer.getInstance().addColour(new Vector4f(1.0F, 0.0F, 0.0F, 1.0F));
+                DebugRenderer.getInstance().addVertex(p1);
+                DebugRenderer.getInstance().addVertex(p2);
 
-                    DebugRenderer.getInstance().addColour(new Vector4f(1.0F, 0.0F, 0.0F, 1.0F));
-                    DebugRenderer.getInstance().addVertex(p1);
-                    DebugRenderer.getInstance().addVertex(p2);
-
-                    DebugRenderer.getInstance().addColour(new Vector4f(0.0F, 1.0F, 0.0F, 1.0F));
-                    DebugRenderer.getInstance().addVertex(tri.getP1());
-                    DebugRenderer.getInstance().addVertex(tri.getP2());
-                    DebugRenderer.getInstance().addVertex(tri.getP2());
-                    DebugRenderer.getInstance().addVertex(tri.getP3());
-                    DebugRenderer.getInstance().addVertex(tri.getP3());
-                    DebugRenderer.getInstance().addVertex(tri.getP1());
-                }
+                DebugRenderer.getInstance().addColour(new Vector4f(0.0F, 1.0F, 0.0F, 1.0F));
+                DebugRenderer.getInstance().addVertex(tri.getP1());
+                DebugRenderer.getInstance().addVertex(tri.getP2());
+                DebugRenderer.getInstance().addVertex(tri.getP2());
+                DebugRenderer.getInstance().addVertex(tri.getP3());
+                DebugRenderer.getInstance().addVertex(tri.getP3());
+                DebugRenderer.getInstance().addVertex(tri.getP1());
             }
             DebugRenderer.getInstance().end(shaderProgram);
             glEnable(GL_DEPTH_TEST);
+        }
+    }
+
+    public <C extends Collider<C>> void collideWith(PhysicsObject<C> object)
+    {
+        for (Triangle triangle : triangles)
+        {
+            CollisionHandler<Triangle, C> collisionHandler = CollisionHandler.getHandler(triangle, object.getCollider());
+            collisionHandler.setPosition(triangle.getPosition(), object.getPosition());
+            collisionHandler.setVelocity(new Vector3f(), object.getVelocity());
+            collisionHandler.updateCollision();
+
+            if (collisionHandler.getCollision().didHit)
+            {
+                CollisionState<Triangle, C> correctedState = collisionHandler.getCorrectedState();
+
+                object.getVelocity().set(correctedState.bComponent.velocity);
+            }
         }
     }
 
@@ -114,47 +136,6 @@ public class Level implements PhysicsObject
     public void addStaticMesh(Mesh mesh)
     {
         this.staticScene.getMesh().addMesh(mesh);
-    }
-
-    public CompositeCollider getSceneCollider()
-    {
-        return sceneCollider;
-    }
-
-    @Override
-    public Vector3f getPosition()
-    {
-        return new Vector3f();
-    }
-
-    @Override
-    public Vector3f getVelocity()
-    {
-        return new Vector3f();
-    }
-
-    @Override
-    public Vector3f getAcceleration()
-    {
-        return new Vector3f();
-    }
-
-    @Override
-    public float getMass()
-    {
-        return 1.0F; //Not used, but avoid divide-by-zero if it is for some reason.
-    }
-
-    @Override
-    public void tick(double delta)
-    {
-
-    }
-
-    @Override
-    public boolean isStatic()
-    {
-        return true;
     }
 
     public Model getSceneMesh()

@@ -14,9 +14,9 @@ import java.util.List;
  */
 public class PhysicsEngine extends TickableThread
 {
-    public static final float GRAVITY = 0.0F;//9.807F;
+    public static final float GRAVITY = 9.807F;
 
-    private List<PhysicsObject> tickable = new ArrayList<>();
+    private List<IPhysicsObject> tickable = new ArrayList<>();
 
     public PhysicsEngine()
     {
@@ -40,7 +40,7 @@ public class PhysicsEngine extends TickableThread
     {
         WireEngine.engine().getEventHandler().postEvent(this, new TickEvent.PhysicsTickEvent(Event.State.PRE, delta));
 
-        for (PhysicsObject object : this.tickable)
+        for (IPhysicsObject object : this.tickable)
         {
 
 //            Vector3f startVelocity = new Vector3f(object.getVelocity());
@@ -62,16 +62,18 @@ public class PhysicsEngine extends TickableThread
 //                System.out.println(object.getAcceleration());
 //            }
 
-            object.getAcceleration().y = -GRAVITY;
-            object.getVelocity().x += object.getAcceleration().x * delta;
-            object.getVelocity().y += object.getAcceleration().y * delta;
-            object.getVelocity().z += object.getAcceleration().z * delta;
+//            object.getAcceleration().y = -GRAVITY;
+//            object.getVelocity().x += object.getAcceleration().x * delta;
+//            object.getVelocity().y += object.getAcceleration().y * delta;
+//            object.getVelocity().z += object.getAcceleration().z * delta;
+//
+//            object.tick(delta);
+//
+//            object.getPosition().x += object.getVelocity().x * delta;// + 0.5F * object.getAcceleration().x * delta * delta;
+//            object.getPosition().y += object.getVelocity().y * delta;// + 0.5F * object.getAcceleration().y * delta * delta;
+//            object.getPosition().z += object.getVelocity().z * delta;// + 0.5F * object.getAcceleration().z * delta * delta;
 
-
-            object.getPosition().x += object.getVelocity().x * delta + 0.5F * object.getAcceleration().x * delta * delta;
-            object.getPosition().y += object.getVelocity().y * delta + 0.5F * object.getAcceleration().y * delta * delta;
-            object.getPosition().z += object.getVelocity().z * delta + 0.5F * object.getAcceleration().z * delta * delta;
-
+            object.applyAcceleration(new Vector3f(0.0f, -GRAVITY, 0.0F));
             object.tick(delta);
         }
 
@@ -84,7 +86,7 @@ public class PhysicsEngine extends TickableThread
         WireEngine.getLogger().info("Cleaning up physics engine");
     }
 
-    public boolean addPhysicsObject(PhysicsObject object)
+    public boolean addPhysicsObject(IPhysicsObject object)
     {
         if (object == null || containsPhysicsObject(object))
         {
@@ -94,12 +96,12 @@ public class PhysicsEngine extends TickableThread
         return this.tickable.add(object);
     }
 
-    public boolean removePhysicsObject(PhysicsObject object)
+    public boolean removePhysicsObject(IPhysicsObject object)
     {
         return this.tickable.remove(object);
     }
 
-    public boolean containsPhysicsObject(PhysicsObject object)
+    public boolean containsPhysicsObject(IPhysicsObject object)
     {
         return this.tickable.contains(object);
     }
