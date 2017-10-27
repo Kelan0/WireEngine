@@ -1,13 +1,15 @@
-package wireengine.core.physics.collision;
+package wireengine.core.physics.collision.colliders;
 
 import org.lwjgl.util.vector.Vector3f;
+import wireengine.core.physics.collision.Collider;
+import wireengine.core.physics.collision.CollisionState;
 import wireengine.core.rendering.Axis;
 import wireengine.core.util.MathUtils;
 
 /**
  * @author Kelan
  */
-public class OrientedBB extends Collider
+public class OrientedBB extends Collider<OrientedBB>
 {
     protected Vector3f position;
     protected Vector3f dimensions;
@@ -22,7 +24,49 @@ public class OrientedBB extends Collider
     }
 
     @Override
-    public CollisionHandler getCollision(Collider collider, float epsilon)
+    public CollisionState.CollisionComponent<OrientedBB> getCollision(AxisAlignedBB collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<OrientedBB> getCollision(Ellipsoid collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<OrientedBB> getCollision(Frustum collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<OrientedBB> getCollision(OrientedBB collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<OrientedBB> getCollision(Plane collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<OrientedBB> getCollision(Ray collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<OrientedBB> getCollision(Sphere collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<OrientedBB> getCollision(Triangle collider)
     {
         return null;
     }

@@ -1,11 +1,13 @@
-package wireengine.core.physics.collision;
+package wireengine.core.physics.collision.colliders;
 
 import org.lwjgl.util.vector.Vector3f;
+import wireengine.core.physics.collision.Collider;
+import wireengine.core.physics.collision.CollisionState;
 
 /**
  * @author Kelan
  */
-public class Ray extends Collider
+public class Ray extends Collider<Ray>
 {
     protected Vector3f position; //Ray origin. Called it position for consistency.
     protected Vector3f direction;
@@ -29,7 +31,49 @@ public class Ray extends Collider
     }
 
     @Override
-    public CollisionHandler getCollision(Collider collider, float epsilon)
+    public CollisionState.CollisionComponent<Ray> getCollision(AxisAlignedBB collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Ray> getCollision(Ellipsoid collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Ray> getCollision(Frustum collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Ray> getCollision(OrientedBB collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Ray> getCollision(Plane collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Ray> getCollision(Ray collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Ray> getCollision(Sphere collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Ray> getCollision(Triangle collider)
     {
         return null;
     }

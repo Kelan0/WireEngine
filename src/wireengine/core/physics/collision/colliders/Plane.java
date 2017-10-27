@@ -1,11 +1,13 @@
-package wireengine.core.physics.collision;
+package wireengine.core.physics.collision.colliders;
 
 import org.lwjgl.util.vector.Vector3f;
+import wireengine.core.physics.collision.Collider;
+import wireengine.core.physics.collision.CollisionState;
 
 /**
  * @author Kelan
  */
-public class Plane extends Collider
+public class Plane extends Collider<Plane>
 {
     protected Vector3f normal;
     protected float distance; // The constant for the plane's equation.
@@ -41,49 +43,90 @@ public class Plane extends Collider
 
         this.distance = -Vector3f.dot(this.normal, position);
     }
+
     @Override
-    public CollisionHandler getCollision(Collider collider, float epsilon)
+    public CollisionState.CollisionComponent<Plane> getCollision(AxisAlignedBB collider)
     {
-        epsilon = Math.abs(epsilon);
+        return null;
+    }
 
-        CollisionHandler collision = new CollisionHandler();
+    @Override
+    public CollisionState.CollisionComponent<Plane> getCollision(Ellipsoid collider)
+    {
+        return null;
+    }
 
-        if (ColliderType.RAY.equals(collider.colliderType))
+    @Override
+    public CollisionState.CollisionComponent<Plane> getCollision(Frustum collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Plane> getCollision(OrientedBB collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Plane> getCollision(Plane collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Plane> getCollision(Ray collider)
+    {
+        CollisionState.CollisionComponent<Plane> collision = new CollisionState.CollisionComponent<>(this);
+        float f = Vector3f.dot(normal, collider.direction);
+        float epsilon = 0.001F;
+
+        if (f < -epsilon || f > epsilon)
         {
-            Ray ray = (Ray) collider;
+            float f1 = -(Vector3f.dot(normal, collider.position) + this.distance) / f;
 
-            float f = Vector3f.dot(normal, ray.direction);
-
-            if (f < -epsilon || f > epsilon)
+            if (f1 >= 0.0F)
             {
-                float f1 = -(Vector3f.dot(normal, ray.position) + this.distance) / f;
-
-                if (f1 >= 0.0F)
-                {
-                    collision.didHit = true;
-                    collision.hitPosition.x = ray.getPosition().x + ray.getDirection().x * f1;
-                    collision.hitPosition.y = ray.getPosition().y + ray.getDirection().y * f1;
-                    collision.hitPosition.z = ray.getPosition().z + ray.getDirection().z * f1;
-                    collision.hitNormal = this.getNormalAt(null);
-                }
+                Vector3f hitPoint = new Vector3f();
+                hitPoint.x = collider.getPosition().x + collider.getDirection().x * f1;
+                hitPoint.y = collider.getPosition().y + collider.getDirection().y * f1;
+                hitPoint.z = collider.getPosition().z + collider.getDirection().z * f1;
+                collision.collisionPoint = hitPoint;
+                collision.collisionNormal = this.getNormalAt(null);
+                return collision;
             }
         }
 
-        if (ColliderType.SPHERE.equals(collider.colliderType))
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Plane> getCollision(Sphere collider)
+    {
+        CollisionState.CollisionComponent<Plane> collision = new CollisionState.CollisionComponent<>(this);
+        Vector3f closest = this.getClosestPoint(collider.getPosition());
+
+        if (collider.pointIntersects(closest))
         {
-            Sphere sphere = (Sphere) collider;
+//            float r = collider.radius;
+//            float d = this.getSignedDistance(collider.getCentre());
+//
+//            collision.didHit = true;
+//            collision.intersection = new Circle(closest, this.getNormalAt(null), (float) Math.sqrt(r * r - d * d)); //Can safely assume this isn't a square root of a negative number, as the closest point on the plane is inside this sphere.
 
-            Vector3f closest = this.getClosestPoint(sphere.getPosition());
+            collision.collisionPoint = closest;
+            collision.collisionNormal = this.getNormalAt(closest);
 
-            if (sphere.pointIntersects(closest))
-            {
-                collision.didHit = true;
-                collision.hitPosition = closest;
-                collision.hitNormal = this.getNormalAt(null);
-            }
+            return collision;
         }
 
-        return collision;
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Plane> getCollision(Triangle collider)
+    {
+        return null;
     }
 
     @Override

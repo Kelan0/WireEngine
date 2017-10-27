@@ -1,11 +1,13 @@
-package wireengine.core.physics.collision;
+package wireengine.core.physics.collision.colliders;
 
 import org.lwjgl.util.vector.Vector3f;
+import wireengine.core.physics.collision.Collider;
+import wireengine.core.physics.collision.CollisionState;
 
 /**
  * @author Kelan
  */
-public class Sphere extends Collider
+public class Sphere extends Collider<Sphere>
 {
     protected Vector3f position;
     protected float radius;
@@ -18,7 +20,49 @@ public class Sphere extends Collider
     }
 
     @Override
-    public CollisionHandler getCollision(Collider collider, float epsilon)
+    public CollisionState.CollisionComponent<Sphere> getCollision(AxisAlignedBB collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Sphere> getCollision(Ellipsoid collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Sphere> getCollision(Frustum collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Sphere> getCollision(OrientedBB collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Sphere> getCollision(Plane collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Sphere> getCollision(Ray collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Sphere> getCollision(Sphere collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Sphere> getCollision(Triangle collider)
     {
         return null;
     }

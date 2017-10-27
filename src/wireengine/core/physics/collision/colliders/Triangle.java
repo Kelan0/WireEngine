@@ -1,7 +1,9 @@
-package wireengine.core.physics.collision;
+package wireengine.core.physics.collision.colliders;
 
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
+import wireengine.core.physics.collision.Collider;
+import wireengine.core.physics.collision.CollisionState;
 import wireengine.core.rendering.ShaderProgram;
 import wireengine.core.rendering.renderer.DebugRenderer;
 import wireengine.core.util.MathUtils;
@@ -11,7 +13,7 @@ import static org.lwjgl.opengl.GL11.*;
 /**
  * @author Kelan
  */
-public class Triangle extends Collider
+public class Triangle extends Collider<Triangle>
 {
     protected Vector3f p1;
     protected Vector3f p2;
@@ -55,13 +57,62 @@ public class Triangle extends Collider
     }
 
     @Override
-    public CollisionHandler getCollision(Collider collider, float epsilon)
+    public CollisionState.CollisionComponent<Triangle> getCollision(AxisAlignedBB collider)
     {
-        CollisionHandler collision = this.plane.getCollision(collider, epsilon);
+        return null;
+    }
 
-        collision.didHit &= pointIntersects(collision.hitPosition);
+    @Override
+    public CollisionState.CollisionComponent<Triangle> getCollision(Ellipsoid collider)
+    {
+        CollisionState.CollisionComponent<Triangle> collision = new CollisionState.CollisionComponent<>(this);
 
-        return collision;
+        Vector3f closestOnCollider = collider.getClosestPoint(this.getClosestPoint(collider.getCentre()));
+
+        if (this.pointIntersects(closestOnCollider))
+        {
+            collision.collisionPoint = this.getClosestPoint(closestOnCollider);
+            collision.collisionNormal = collider.getNormalAt(null);
+            return collision;
+        }
+
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Triangle> getCollision(Frustum collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Triangle> getCollision(OrientedBB collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Triangle> getCollision(Plane collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Triangle> getCollision(Ray collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Triangle> getCollision(Sphere collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Triangle> getCollision(Triangle collider)
+    {
+        return null;
     }
 
     @Override

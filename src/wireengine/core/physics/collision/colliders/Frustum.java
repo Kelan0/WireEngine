@@ -1,11 +1,13 @@
-package wireengine.core.physics.collision;
+package wireengine.core.physics.collision.colliders;
 
 import org.lwjgl.util.vector.Vector3f;
+import wireengine.core.physics.collision.Collider;
+import wireengine.core.physics.collision.CollisionState;
 
 /**
  * @author Kelan
  */
-public class Frustum extends Collider
+public class Frustum extends Collider<Frustum>
 {
     protected Vector3f position;
 
@@ -17,7 +19,49 @@ public class Frustum extends Collider
     }
 
     @Override
-    public CollisionHandler getCollision(Collider collider, float epsilon)
+    public CollisionState.CollisionComponent<Frustum> getCollision(AxisAlignedBB collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Frustum> getCollision(Ellipsoid collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Frustum> getCollision(Frustum collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Frustum> getCollision(OrientedBB collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Frustum> getCollision(Plane collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Frustum> getCollision(Ray collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Frustum> getCollision(Sphere collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<Frustum> getCollision(Triangle collider)
     {
         return null;
     }

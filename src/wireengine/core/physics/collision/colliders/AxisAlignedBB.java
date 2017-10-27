@@ -1,7 +1,9 @@
-package wireengine.core.physics.collision;
+package wireengine.core.physics.collision.colliders;
 
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
+import wireengine.core.physics.collision.Collider;
+import wireengine.core.physics.collision.CollisionState;
 import wireengine.core.rendering.Axis;
 import wireengine.core.rendering.ShaderProgram;
 import wireengine.core.rendering.renderer.DebugRenderer;
@@ -12,7 +14,7 @@ import static org.lwjgl.opengl.GL11.GL_LINES;
 /**
  * @author Kelan
  */
-public class AxisAlignedBB extends Collider
+public class AxisAlignedBB extends Collider<AxisAlignedBB>
 {
     protected Vector3f position;
     protected Vector3f min;
@@ -71,7 +73,49 @@ public class AxisAlignedBB extends Collider
     }
 
     @Override
-    public CollisionHandler getCollision(Collider collider, float epsilon)
+    public CollisionState.CollisionComponent<AxisAlignedBB> getCollision(AxisAlignedBB collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<AxisAlignedBB> getCollision(Ellipsoid collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<AxisAlignedBB> getCollision(Frustum collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<AxisAlignedBB> getCollision(OrientedBB collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<AxisAlignedBB> getCollision(Plane collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<AxisAlignedBB> getCollision(Ray collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<AxisAlignedBB> getCollision(Sphere collider)
+    {
+        return null;
+    }
+
+    @Override
+    public CollisionState.CollisionComponent<AxisAlignedBB> getCollision(Triangle collider)
     {
         return null;
     }
