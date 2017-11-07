@@ -3,6 +3,8 @@ package wireengine.core.util;
 import org.lwjgl.util.vector.*;
 import wireengine.core.rendering.Axis;
 
+import java.nio.FloatBuffer;
+
 /**
  * @author Kelan
  */
@@ -352,5 +354,26 @@ public class MathUtils
     public static Vector3f abs(Vector3f vector)
     {
         return new Vector3f(Math.abs(vector.x), Math.abs(vector.y),Math.abs(vector.z));
+    }
+
+
+    public static boolean getRoots(float a, float b, float c, FloatBuffer buf)
+    {
+        float determinant = b * b - 4.0F * a * c;
+        if (determinant >= 0.0F)
+        {
+            float sqrtD = (float) Math.sqrt(determinant);
+            float temp1 = (-b - sqrtD) / (2.0F * a);
+            float temp2 = (-b + sqrtD) / (2.0F * a);
+            float x1 = Math.min(temp1, temp2);
+            float x2 = Math.max(temp1, temp2);
+
+            buf.put(x1).put(x2).flip();
+            return true;
+        } else
+        {
+            buf.put(Float.NaN).put(Float.NaN).flip();
+            return false;
+        }
     }
 }

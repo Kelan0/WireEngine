@@ -72,9 +72,29 @@ public class Ellipsoid extends Collider<Ellipsoid>
         return mat;
     }
 
-    public Vector3f getRelativePoint(Vector3f point)
+    public Vector3f getRelativeVector(Vector3f point)
     {
         return Matrix3f.transform(this.getElipsoidSpace(), point, null);
+    }
+
+    public void transformPoints(Vector3f...  points)
+    {
+        transformPoints(false, points);
+    }
+
+    public void transformPoints(boolean inverse, Vector3f...  points) //Transform all these points into eSpace.
+    {
+        Matrix3f matrix = this.getElipsoidSpace();
+
+        if (inverse)
+        {
+            matrix.invert();
+        }
+
+        for (Vector3f point : points)
+        {
+            point.set(Matrix3f.transform(matrix, point, null));
+        }
     }
 
     @Override
@@ -122,15 +142,14 @@ public class Ellipsoid extends Collider<Ellipsoid>
     @Override
     public CollisionState.CollisionComponent<Ellipsoid> getCollision(Triangle collider)
     {
-
         return null;
     }
 
     @Override
     public boolean pointIntersects(Vector3f point)
     {
-        point =  getRelativePoint(point);
-        Vector3f centre = getRelativePoint(this.getCentre());
+        point =  getRelativeVector(point);
+        Vector3f centre = getRelativeVector(this.getCentre());
 
         if (MathUtils.distanceSquared(point, centre) <= 1.0F)
         {
@@ -143,8 +162,8 @@ public class Ellipsoid extends Collider<Ellipsoid>
     @Override
     public Vector3f getClosestPoint(Vector3f point)
     {
-        Vector3f eCentre = getRelativePoint(this.getCentre());
-        Vector3f ePoint = getRelativePoint(point);
+        Vector3f eCentre = getRelativeVector(this.getCentre());
+        Vector3f ePoint = getRelativeVector(point);
 
         Vector3f eUnitSphere = Vector3f.sub(ePoint, eCentre, null).normalise(null);
         Matrix3f eSpaceInverse = Matrix3f.invert(getElipsoidSpace(), null);

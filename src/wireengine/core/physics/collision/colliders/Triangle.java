@@ -26,6 +26,15 @@ public class Triangle extends Collider<Triangle>
         this.set(p1, p2, p3);
     }
 
+    public Triangle(Triangle triangle)
+    {
+        super(ColliderType.TRIANGLE);
+        this.p1 = new Vector3f(triangle.p1);
+        this.p2 = new Vector3f(triangle.p2);
+        this.p3 = new Vector3f(triangle.p3);
+        this.plane = new Plane(triangle.plane.getPosition(), triangle.plane.getNormalAt(null));
+    }
+
     public void set(Vector3f p1, Vector3f p2, Vector3f p3)
     {
         this.p1 = p1;
@@ -45,15 +54,20 @@ public class Triangle extends Collider<Triangle>
         DebugRenderer.getInstance().begin(GL_TRIANGLES);
 
         int polyMode = glGetInteger(GL_POLYGON_MODE);
-        glPolygonMode(GL_FRONT_AND_BACK, type);
-        DebugRenderer.getInstance().addColour(colour);
 
+
+        DebugRenderer.getInstance().addColour(colour);
         DebugRenderer.getInstance().addVertex(new Vector3f(this.getP1()));
         DebugRenderer.getInstance().addVertex(new Vector3f(this.getP2()));
         DebugRenderer.getInstance().addVertex(new Vector3f(this.getP3()));
-        glPolygonMode(GL_FRONT_AND_BACK, polyMode);
 
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
+        glPolygonMode(GL_FRONT_AND_BACK, type);
         DebugRenderer.getInstance().end(shaderProgram);
+        glPolygonMode(GL_FRONT_AND_BACK, polyMode);
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
     }
 
     @Override
@@ -132,7 +146,7 @@ public class Triangle extends Collider<Triangle>
         float u = (bEdgeLengthSquared * aDotRel - aDotb * bDotRel) * invBarycentricScaler;
         float v = (aEdgeLengthSquared * bDotRel - aDotb * aDotRel) * invBarycentricScaler;
 
-        return (u >= 0) && (v >= 0) && (u + v < 1);
+        return (u >= 0.0F) && (v >= 0.0F) && (u + v < 1.0F);
     }
 
     public Vector3f getClosestPoint(Vector3f point)
@@ -301,5 +315,29 @@ public class Triangle extends Collider<Triangle>
     public void setP3(Vector3f p3)
     {
         this.set(p1, p2, p3);
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Triangle triangle = (Triangle) o;
+
+        if (p1 != null ? !p1.equals(triangle.p1) : triangle.p1 != null) return false;
+        if (p2 != null ? !p2.equals(triangle.p2) : triangle.p2 != null) return false;
+        if (p3 != null ? !p3.equals(triangle.p3) : triangle.p3 != null) return false;
+        return plane != null ? plane.equals(triangle.plane) : triangle.plane == null;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = p1 != null ? p1.hashCode() : 0;
+        result = 31 * result + (p2 != null ? p2.hashCode() : 0);
+        result = 31 * result + (p3 != null ? p3.hashCode() : 0);
+        result = 31 * result + (plane != null ? plane.hashCode() : 0);
+        return result;
     }
 }

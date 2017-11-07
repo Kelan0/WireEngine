@@ -4,30 +4,27 @@ import org.lwjgl.util.vector.Vector3f;
 import wireengine.core.WireEngine;
 import wireengine.core.level.Level;
 import wireengine.core.physics.collision.Collider;
-import wireengine.core.physics.collision.CollisionState;
-import wireengine.core.physics.collision.CollisionHandler;
-import wireengine.core.physics.collision.colliders.Triangle;
 
 /**
  * @author Kelan
  */
-public class PhysicsObject<C extends Collider<C>> implements IPhysicsObject
+public class PhysicsObject<T extends Collider<T>> implements IPhysicsObject
 {
-    protected C collider;
+    protected T collider;
     protected Vector3f velocity = new Vector3f();
     protected Vector3f acceleration = new Vector3f();
     protected float mass = 1.0F;
     protected boolean onGround = false;
     protected final boolean isStatic;
 
-    public PhysicsObject(C collider, float mass, boolean isStatic)
+    public PhysicsObject(T collider, float mass, boolean isStatic)
     {
         this.collider = collider;
         this.mass = mass;
         this.isStatic = isStatic;
     }
 
-    public PhysicsObject(C collider, float mass)
+    public PhysicsObject(T collider, float mass)
     {
         this(collider, mass, false);
     }
@@ -42,9 +39,9 @@ public class PhysicsObject<C extends Collider<C>> implements IPhysicsObject
         getVelocity().y += getAcceleration().y * delta;
         getVelocity().z += getAcceleration().z * delta;
 
-        level.collideWith(this);
+        level.collideWith(this, delta);
 
-        if (this.velocity.y == 0.0F)
+        if (false && this.velocity.y == 0.0F)
         {
             onGround = true;
             this.velocity.x /= (1.0F + friction * delta);
@@ -118,7 +115,7 @@ public class PhysicsObject<C extends Collider<C>> implements IPhysicsObject
         return onGround;
     }
 
-    public synchronized C getCollider()
+    public synchronized T getCollider()
     {
         return collider;
     }

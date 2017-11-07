@@ -77,25 +77,25 @@ public class Plane extends Collider<Plane>
     @Override
     public CollisionState.CollisionComponent<Plane> getCollision(Ray collider)
     {
-        CollisionState.CollisionComponent<Plane> collision = new CollisionState.CollisionComponent<>(this);
-        float f = Vector3f.dot(normal, collider.direction);
-        float epsilon = 0.001F;
-
-        if (f < -epsilon || f > epsilon)
-        {
-            float f1 = -(Vector3f.dot(normal, collider.position) + this.distance) / f;
-
-            if (f1 >= 0.0F)
-            {
-                Vector3f hitPoint = new Vector3f();
-                hitPoint.x = collider.getPosition().x + collider.getDirection().x * f1;
-                hitPoint.y = collider.getPosition().y + collider.getDirection().y * f1;
-                hitPoint.z = collider.getPosition().z + collider.getDirection().z * f1;
-                collision.collisionPoint = hitPoint;
-                collision.collisionNormal = this.getNormalAt(null);
-                return collision;
-            }
-        }
+//        CollisionState.CollisionComponent<Plane> collision = new CollisionState.CollisionComponent<>(this);
+//        float f = Vector3f.dot(normal, collider.direction);
+//        float epsilon = 0.001F;
+//
+//        if (f < -epsilon || f > epsilon)
+//        {
+//            float f1 = -(Vector3f.dot(normal, collider.position) + this.distance) / f;
+//
+//            if (f1 >= 0.0F)
+//            {
+//                Vector3f hitPoint = new Vector3f();
+//                hitPoint.x = collider.getPosition().x + collider.getDirection().x * f1;
+//                hitPoint.y = collider.getPosition().y + collider.getDirection().y * f1;
+//                hitPoint.z = collider.getPosition().z + collider.getDirection().z * f1;
+//                collision.collisionPoint = hitPoint;
+//                collision.collisionNormal = this.getNormalAt(null);
+//                return collision;
+//            }
+//        }
 
         return null;
     }
@@ -161,7 +161,7 @@ public class Plane extends Collider<Plane>
 
     public float getSignedDistance(Vector3f point)
     {
-        return Vector3f.dot(this.normal, Vector3f.sub(point, (Vector3f) getNormalAt(null).scale(-distance), null));
+        return (Vector3f.dot(normal, point) + this.distance); // / normal.lengthSquared();
     }
 
     public void setNormal(Vector3f normal)

@@ -3,11 +3,13 @@ package wireengine.core.level;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
+import wireengine.core.WireEngine;
 import wireengine.core.physics.PhysicsObject;
 import wireengine.core.physics.collision.Collider;
 import wireengine.core.physics.collision.CollisionHandler;
-import wireengine.core.physics.collision.CollisionState;
 import wireengine.core.physics.collision.colliders.Triangle;
+import wireengine.core.physics.collision.colliders.TriangleMesh;
+import wireengine.core.player.Player;
 import wireengine.core.rendering.ShaderProgram;
 import wireengine.core.rendering.geometry.Mesh;
 import wireengine.core.rendering.geometry.MeshHelper;
@@ -27,7 +29,7 @@ import static org.lwjgl.opengl.GL11.*;
  */
 public class Level
 {
-    private List<Triangle> triangles = new ArrayList<>();
+    private TriangleMesh collider;
     private Model staticScene;
     private List<Model> dynamicScene;
     private boolean renderHitbox;
@@ -46,6 +48,7 @@ public class Level
 
             this.staticScene = new Model(sceneMesh, new Transformation());
 
+            List<Triangle> triangles = new ArrayList<>();
             for (Mesh.Face3 face : sceneMesh.getFaceList())
             {
                 Vector3f p1 = face.getV1().getPosition();
@@ -53,9 +56,10 @@ public class Level
                 Vector3f p3 = face.getV3().getPosition();
 
                 Triangle triangle = new Triangle(p1, p2, p3);
-                this.triangles.add(triangle);
+                triangles.add(triangle);
             }
 
+            this.collider = new TriangleMesh(new Vector3f(), triangles);
 //            WireEngine.engine().getPhysicsEngine().addPhysicsObject(this.physicsObject);
 
         } catch (IOException e)
@@ -88,7 +92,7 @@ public class Level
             glEnable(GL_LINE_SMOOTH);
             glDisable(GL_DEPTH_TEST);
             DebugRenderer.getInstance().begin(GL_LINES);
-            for (Triangle tri : this.triangles)
+            for (Triangle tri : this.collider.getTriangles())
             {
                 Vector3f p1 = tri.getPosition();
                 Vector3f p2 = Vector3f.add(tri.getNormalAt(null), p1, null);
@@ -110,22 +114,12 @@ public class Level
         }
     }
 
-    public <C extends Collider<C>> void collideWith(PhysicsObject<C> object)
+    public <C extends Collider<C>> void collideWith(PhysicsObject<C> object, double delta)
     {
-        for (Triangle triangle : triangles)
-        {
-            CollisionHandler<Triangle, C> collisionHandler = CollisionHandler.getHandler(triangle, object.getCollider());
-            collisionHandler.setPosition(triangle.getPosition(), object.getPosition());
-            collisionHandler.setVelocity(new Vector3f(), object.getVelocity());
-            collisionHandler.updateCollision();
+        CollisionHandler<TriangleMesh, C> handler = CollisionHandler.getHandler(this.collider, object.getCollider()).handleCollisions(null, object, delta);
 
-            if (collisionHandler.getCollision().didHit)
-            {
-                CollisionState<Triangle, C> correctedState = collisionHandler.getCorrectedState();
-
-                object.getVelocity().set(correctedState.bComponent.velocity);
-            }
-        }
+        Player player = WireEngine.engine().getGame().getPlayer();
+        player.addDebug(handler.getCollidingObject());
     }
 
     public void addStaticMesh(Model model)

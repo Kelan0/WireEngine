@@ -53,6 +53,6 @@ public abstract class Collider<T extends Collider<T>>
 
     public enum ColliderType
     {
-        PLANE, SPHERE, CYLINDER, CONE, QUAD, TRIANGLE, AABB, OBB, FRUSTUM, RAY, ELIPSOID, COMPOSITE
+        PLANE, SPHERE, CYLINDER, CONE, QUAD, TRIANGLE, AABB, OBB, FRUSTUM, RAY, ELIPSOID, TRIANGLE_MESH, COMPOSITE
     }
 }
