@@ -7,7 +7,7 @@ import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
-import wireengine.core.physics.collision.colliders.Triangle;
+import wireengine.core.physics.collision.Triangle;
 import wireengine.core.rendering.ShaderProgram;
 
 import java.nio.Buffer;

@@ -1,19 +1,14 @@
 package wireengine.testgame;
 
-import org.lwjgl.BufferUtils;
-import org.lwjgl.util.vector.Vector3f;
 import wireengine.core.GameSettings;
 import wireengine.core.WireEngine;
 import wireengine.core.event.events.TickEvent;
 import wireengine.core.level.Level;
 import wireengine.core.level.LevelLoader;
-import wireengine.core.physics.collision.colliders.Plane;
 import wireengine.core.rendering.renderer.WorldRenderer;
-import wireengine.core.util.MathUtils;
 import wireengine.core.window.InputHandler;
 
 import java.io.IOException;
-import java.nio.FloatBuffer;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F1;

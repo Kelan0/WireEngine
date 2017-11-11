@@ -4,8 +4,7 @@ import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
 import wireengine.core.physics.PhysicsObject;
-import wireengine.core.physics.collision.colliders.Ellipsoid;
-import wireengine.core.physics.collision.colliders.Triangle;
+import wireengine.core.physics.collision.Colliders;
 import wireengine.core.rendering.Axis;
 import wireengine.core.rendering.Camera;
 import wireengine.core.rendering.ShaderProgram;
@@ -13,11 +12,7 @@ import wireengine.core.rendering.renderer.DebugRenderer;
 import wireengine.core.util.MathUtils;
 import wireengine.core.window.InputHandler;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11.*;
 import static wireengine.core.util.Constants.HALF_PI;
 import static wireengine.core.util.Constants.RADIANS;
 
@@ -27,7 +22,7 @@ import static wireengine.core.util.Constants.RADIANS;
 public class Player
 {
     private final Camera camera;
-    private final float playerSize = 0.1F;
+    private final float playerSize = 0.18F;
     private final float standHeight = 1.3F;
     private final float crouchHeight = 0.7F;
     private final float walkSpeed = 3.6F;
@@ -38,8 +33,6 @@ public class Player
     private boolean canFly = true;
 
     private PhysicsObject physicsObject;
-    public Vector3f collisionPos;
-    public boolean clearDebug;
 
     public Player()
     {
@@ -48,7 +41,8 @@ public class Player
 
     public void init()
     {
-        this.physicsObject = new PhysicsObject<>(new Ellipsoid(new Vector3f(0.0F, this.currentHeight * 0.5F + 0.05F, 0.0F), new Vector3f(playerSize, currentHeight * 0.5F + 0.1f, playerSize)), 70.0F);
+//        new Ellipsoid(new Vector3f(0.0F, this.currentHeight * 0.5F + 0.05F, 0.0F), new Vector3f(playerSize, currentHeight * 0.5F + 0.1f, playerSize))
+        this.physicsObject = new PhysicsObject(Colliders.getEllipsoid(1, new Vector3f(playerSize, currentHeight * 0.5F + 0.1F, playerSize)), 70.0F);
         WireEngine.engine().getPhysicsEngine().addPhysicsObject(this.physicsObject);
 //        debug = new Triangle(new Vector3f(10.0F, 0.0F, 1.0f), new Vector3f(10.0F, 3.0F, -4.0F), new Vector3f(12.0F, -1.0F, -4.5F));
     }
@@ -58,39 +52,9 @@ public class Player
         camera.setPosition(this.getHeadPosition());
         camera.render(shaderProgram);
 
-        ((Ellipsoid)this.physicsObject.getCollider()).renderDebug(shaderProgram, new Vector4f(0.0F, 1.0F, 0.0F, 1.0F));
+        this.physicsObject.renderDebug(shaderProgram, new Vector4f(0.0F, 1.0F, 0.0F, 1.0F));
 
-        DebugRenderer.getInstance().begin(GL_TRIANGLES);
-        if (debug != null && debug.size() > 0)
-        {
-            for (Triangle t : new ArrayList<>(debug))
-            {
-                if (t != null)
-                {
-                    DebugRenderer.getInstance().addColour(new Vector4f(1.0F, 0.0F, 0.0F, 1.0F));
-                    DebugRenderer.getInstance().addVertex(t.getP1());
-                    DebugRenderer.getInstance().addVertex(t.getP2());
-                    DebugRenderer.getInstance().addVertex(t.getP3());
-                }
-            }
-
-            if (clearDebug)
-            {
-                debug.clear();
-                clearDebug = false;
-            }
-        }
         DebugRenderer.getInstance().end(shaderProgram);
-
-        if (collisionPos != null)
-        {
-            glPointSize(8.0F);
-            DebugRenderer.getInstance().begin(GL_POINTS);
-            DebugRenderer.getInstance().addColour(new Vector4f(0.0F, 1.0F, 0.0F, 1.0F));
-            DebugRenderer.getInstance().addVertex(collisionPos);
-            DebugRenderer.getInstance().end(shaderProgram);
-        }
-//        physicsObject.getCollider().renderDebug(shaderProgram, new Vector4f(0.0f, 1.0f, 0.0f, 1.0f));
     }
 
     public void handleInput(double delta)
@@ -279,20 +243,12 @@ public class Player
         return axis;
     }
 
-    public void addDebug(Triangle debug)
-    {
-        if (debug != null)
-        {
-            this.debug.add(debug);
-        }
-    }
-
 //    @Override
 //    public void tick(double delta)
 //    {
 //        Level level = WireEngine.engine().getGame().getLevel();
-//        this.collider.setPosition(new Vector3f(this.position.x, this.position.y + (this.currentHeight + 0.1F) * 0.5F, this.position.z));
-//        this.collider.getRadius().y = (this.currentHeight + 0.1F) * 0.5F;
+//        this.colliders.setPosition(new Vector3f(this.position.x, this.position.y + (this.currentHeight + 0.1F) * 0.5F, this.position.z));
+//        this.colliders.getRadius().y = (this.currentHeight + 0.1F) * 0.5F;
 //
 //        float friction = 8.6F;
 //
@@ -307,7 +263,7 @@ public class Player
 //            this.moveDirection = new Vector3f();
 //        }
 //
-//        this.velocity = level.collideWith(this.collider, this.velocity);
+//        this.velocity = level.collideWith(this.colliders, this.velocity);
 //
 //        if (this.velocity.y == 0.0F)
 //        {

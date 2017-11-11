@@ -1,9 +1,7 @@
 package wireengine.core.rendering.renderer;
 
 import org.lwjgl.BufferUtils;
-import org.lwjgl.util.vector.Vector2f;
-import org.lwjgl.util.vector.Vector3f;
-import org.lwjgl.util.vector.Vector4f;
+import org.lwjgl.util.vector.*;
 import wireengine.core.rendering.ShaderProgram;
 
 import java.nio.Buffer;
@@ -81,11 +79,11 @@ public class DebugRenderer
         this.running = true;
     }
 
-    public void addVertex(Vector3f v)
+    public void addVertex(ReadableVector3f v)
     {
-        this.data.add(v.x);
-        this.data.add(v.y);
-        this.data.add(v.z);
+        this.data.add(v.getX());
+        this.data.add(v.getY());
+        this.data.add(v.getZ());
         this.data.add(currentNormal.x);
         this.data.add(currentNormal.y);
         this.data.add(currentNormal.z);
@@ -98,25 +96,25 @@ public class DebugRenderer
         numVertices++;
     }
 
-    public void addNormal(Vector3f v)
+    public void addNormal(ReadableVector3f v)
     {
-        this.currentNormal.x = v.x;
-        this.currentNormal.y = v.y;
-        this.currentNormal.z = v.z;
+        this.currentNormal.x = v.getX();
+        this.currentNormal.y = v.getY();
+        this.currentNormal.z = v.getZ();
     }
 
-    public void addTexture(Vector2f v)
+    public void addTexture(ReadableVector2f v)
     {
-        this.currentTexture.x = v.x;
-        this.currentTexture.y = v.y;
+        this.currentTexture.x = v.getX();
+        this.currentTexture.y = v.getY();
     }
 
-    public void addColour(Vector4f v)
+    public void addColour(ReadableVector4f v)
     {
-        this.currentColour.x = v.x;
-        this.currentColour.y = v.y;
-        this.currentColour.z = v.z;
-        this.currentColour.w = v.w;
+        this.currentColour.x = v.getX();
+        this.currentColour.y = v.getY();
+        this.currentColour.z = v.getZ();
+        this.currentColour.w = v.getW();
     }
 
     public void end(ShaderProgram shaderProgram)

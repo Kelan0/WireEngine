@@ -1,31 +1,38 @@
 package wireengine.core.physics;
 
 import org.lwjgl.util.vector.Vector3f;
+import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
 import wireengine.core.level.Level;
+import wireengine.core.physics.collision.Triangle;
+import wireengine.core.rendering.ShaderProgram;
+import wireengine.core.rendering.renderer.DebugRenderer;
+
+import static org.lwjgl.opengl.GL11.GL_LINES;
 
 /**
  * @author Kelan
  */
-public class PhysicsObject<T extends Collider<T>> implements IPhysicsObject
+public class PhysicsObject implements IPhysicsObject
 {
-    protected T collider;
+    protected Triangle[] colliders;
+    protected Vector3f position = new Vector3f();
     protected Vector3f velocity = new Vector3f();
     protected Vector3f acceleration = new Vector3f();
     protected float mass = 1.0F;
     protected boolean onGround = false;
     protected final boolean isStatic;
 
-    public PhysicsObject(T collider, float mass, boolean isStatic)
+    public PhysicsObject(Triangle[] colliders, float mass, boolean isStatic)
     {
-        this.collider = collider;
+        this.colliders = colliders;
         this.mass = mass;
         this.isStatic = isStatic;
     }
 
-    public PhysicsObject(T collider, float mass)
+    public PhysicsObject(Triangle[] colliders, float mass)
     {
-        this(collider, mass, false);
+        this(colliders, mass, false);
     }
 
     @Override
@@ -38,7 +45,7 @@ public class PhysicsObject<T extends Collider<T>> implements IPhysicsObject
         getVelocity().y += getAcceleration().y * delta;
         getVelocity().z += getAcceleration().z * delta;
 
-        level.collideWith(this, delta);
+//        level.collideWith(this, delta);
 
         if (this.acceleration.lengthSquared() <= 0.0F)
         {
@@ -51,6 +58,31 @@ public class PhysicsObject<T extends Collider<T>> implements IPhysicsObject
         getPosition().y += getVelocity().y * delta;// + 0.5F * object.getAcceleration().y * delta * delta;
         getPosition().z += getVelocity().z * delta;// + 0.5F * object.getAcceleration().z * delta * delta;
         this.acceleration = new Vector3f();
+    }
+
+    public void renderDebug(ShaderProgram shaderProgram, Vector4f colour)
+    {
+        DebugRenderer.getInstance().begin(GL_LINES);
+        if (this.colliders != null && this.colliders.length > 0)
+        {
+            for (Triangle triangle : this.colliders)
+            {
+                DebugRenderer.getInstance().addColour(colour);
+                DebugRenderer.getInstance().addVertex(triangle.getP1());
+                DebugRenderer.getInstance().addVertex(triangle.getP2());
+
+                DebugRenderer.getInstance().addVertex(triangle.getP2());
+                DebugRenderer.getInstance().addVertex(triangle.getP3());
+
+                DebugRenderer.getInstance().addVertex(triangle.getP3());
+                DebugRenderer.getInstance().addVertex(triangle.getP1());
+
+                DebugRenderer.getInstance().addColour(new Vector4f(1.0F, 0.0F, 0.0F, 1.0F));
+                DebugRenderer.getInstance().addVertex(triangle.getPosition());
+                DebugRenderer.getInstance().addVertex(Vector3f.add(triangle.getPosition(), (Vector3f) new Vector3f(triangle.getNormal()).scale(0.25F), null));
+            }
+        }
+        DebugRenderer.getInstance().end(shaderProgram);
     }
 
     @Override
@@ -68,7 +100,7 @@ public class PhysicsObject<T extends Collider<T>> implements IPhysicsObject
     @Override
     public synchronized Vector3f getPosition()
     {
-        return collider.getPosition();
+        return this.position;
     }
 
     @Override
@@ -110,8 +142,8 @@ public class PhysicsObject<T extends Collider<T>> implements IPhysicsObject
         return onGround;
     }
 
-    public synchronized T getCollider()
+    public synchronized Triangle[] getColliders()
     {
-        return collider;
+        return colliders;
     }
 }
