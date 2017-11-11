@@ -33,7 +33,7 @@ public class PhysicsObject<T extends Collider<T>> implements IPhysicsObject
     public synchronized void tick(double delta)
     {
         Level level = WireEngine.engine().getGame().getLevel();
-        float friction = 8.6F;
+        float friction = 5.6F;
 
         getVelocity().x += getAcceleration().x * delta;
         getVelocity().y += getAcceleration().y * delta;
@@ -41,15 +41,11 @@ public class PhysicsObject<T extends Collider<T>> implements IPhysicsObject
 
         level.collideWith(this, delta);
 
-        if (false && this.velocity.y == 0.0F)
+        if (this.acceleration.lengthSquared() <= 0.0F)
         {
-            onGround = true;
             this.velocity.x /= (1.0F + friction * delta);
             this.velocity.y /= (1.0F + friction * delta);
             this.velocity.z /= (1.0F + friction * delta);
-        } else
-        {
-            onGround = false;
         }
 
         getPosition().x += getVelocity().x * delta;// + 0.5F * object.getAcceleration().x * delta * delta;

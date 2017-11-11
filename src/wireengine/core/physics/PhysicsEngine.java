@@ -14,7 +14,7 @@ import java.util.List;
  */
 public class PhysicsEngine extends TickableThread
 {
-    public static final float GRAVITY = 3.0F;//9.807F;
+    public static final float GRAVITY = 0.0F;//9.807F;
 
     private List<IPhysicsObject> tickable = new ArrayList<>();
 
