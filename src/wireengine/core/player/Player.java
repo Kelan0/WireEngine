@@ -38,7 +38,6 @@ public class Player
     private boolean canFly = true;
 
     private PhysicsObject physicsObject;
-    private List<Triangle> debug = new ArrayList<>();
     public Vector3f collisionPos;
     public boolean clearDebug;
 

@@ -5,8 +5,6 @@ import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
 import wireengine.core.physics.PhysicsObject;
-import wireengine.core.physics.collision.Collider;
-import wireengine.core.physics.collision.CollisionHandler;
 import wireengine.core.physics.collision.colliders.Triangle;
 import wireengine.core.physics.collision.colliders.TriangleMesh;
 import wireengine.core.player.Player;

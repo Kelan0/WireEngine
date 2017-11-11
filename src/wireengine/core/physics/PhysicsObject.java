@@ -3,7 +3,6 @@ package wireengine.core.physics;
 import org.lwjgl.util.vector.Vector3f;
 import wireengine.core.WireEngine;
 import wireengine.core.level.Level;
-import wireengine.core.physics.collision.Collider;
 
 /**
  * @author Kelan
