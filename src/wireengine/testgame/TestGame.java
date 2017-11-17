@@ -5,6 +5,8 @@ import wireengine.core.WireEngine;
 import wireengine.core.event.events.TickEvent;
 import wireengine.core.level.Level;
 import wireengine.core.level.LevelLoader;
+import wireengine.core.rendering.geometry.MeshHelper;
+import wireengine.core.rendering.geometry.Model;
 import wireengine.core.rendering.renderer.WorldRenderer;
 import wireengine.core.window.InputHandler;
 

@@ -3,6 +3,10 @@ package wireengine.core.physics.collision;
 import org.lwjgl.util.vector.Vector3f;
 import wireengine.core.physics.PhysicsObject;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @author Kelan
  */
@@ -19,6 +23,11 @@ public class CollisionResult
     public PhysicsObject b;
 
     /**
+     * A list of all of the points of intersection between these two
+     * physics objects.
+     */
+    public ArrayList<Vector3f> intersectionPoints;
+     /**
      * The point in the world where the first contact between
      * these two objects will happen.
      */
@@ -51,6 +60,7 @@ public class CollisionResult
     {
         this.a = a;
         this.b = b;
+        this.intersectionPoints = new ArrayList<>();
         this.collisionPoint = collisionPoint;
         this.collisionNormal = collisionNormal;
         this.collisionTime = collisionTime;

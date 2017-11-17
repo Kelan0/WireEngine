@@ -4,6 +4,7 @@ import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
+import wireengine.core.rendering.Axis;
 import wireengine.core.util.FileUtils;
 import wireengine.core.util.StringUtils;
 
@@ -60,7 +61,7 @@ public class MeshHelper
 
         Mesh.Face4 fNegX = new Mesh.Face4(v1, v2, v3, v0);
         Mesh.Face4 fPosX = new Mesh.Face4(v5, v4, v7, v6);
-        Mesh.Face4 fNegY = new Mesh.Face4(v1, v5, v4, v0);
+        Mesh.Face4 fNegY = new Mesh.Face4(v0, v4, v5, v1);
         Mesh.Face4 fPosY = new Mesh.Face4(v2, v6, v7, v3);
         Mesh.Face4 fNegZ = new Mesh.Face4(v7, v4, v0, v3);
         Mesh.Face4 fPosZ = new Mesh.Face4(v1, v5, v6, v2);
@@ -115,7 +116,8 @@ public class MeshHelper
             Mesh.Vertex v3 = vertices[indices[pointer++]];
             Mesh.Vertex v4 = vertices[indices[pointer++]];
 
-            mesh.addFace(new Mesh.Face4(v1, v2, v3, v4));
+            Mesh.Face4 face = new Mesh.Face4(v1, v2, v3, v4);
+            mesh.addFace(face);
         }
 
         return mesh.compile();
@@ -138,11 +140,27 @@ public class MeshHelper
         return mesh.compile();
     }
 
-    public static Mesh createPlane(float width, float height, Vector3f normal)
+    public static Mesh createPlane(float xSize, float ySize, int xDivisions, int yDivisions, Axis axis)
     {
         Mesh mesh = Mesh.create();
 
-        return mesh;
+        float quadWidth = xSize / xDivisions;
+        float quadHeight = ySize / yDivisions;
+
+        for (int i = 0; i < xDivisions - 1; i++)
+        {
+            for (int j = 0; j < yDivisions - 1; j++)
+            {
+                Mesh.Vertex v0 = new Mesh.Vertex(axis.transform(new Vector3f((i + 0) * quadWidth, 0.0F, (j + 1) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
+                Mesh.Vertex v1 = new Mesh.Vertex(axis.transform(new Vector3f((i + 1) * quadWidth, 0.0F, (j + 1) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
+                Mesh.Vertex v2 = new Mesh.Vertex(axis.transform(new Vector3f((i + 1) * quadWidth, 0.0F, (j + 0) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
+                Mesh.Vertex v3 = new Mesh.Vertex(axis.transform(new Vector3f((i + 0) * quadWidth, 0.0F, (j + 0) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
+
+                mesh.addFace(new Mesh.Face4(v0, v1, v2, v3));
+            }
+        }
+
+        return mesh.compile();
     }
 
     public static Mesh createTorus(float innerRadius, float outerRadius, float xDivisions, float yDivisions)

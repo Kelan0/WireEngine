@@ -58,7 +58,7 @@ public class WorldRenderer extends Renderer3D
         worldShader.setUniformMatrix4f("projectionMatrix", projectionMatrix);
 
         Game game = WireEngine.engine().getGame();
-        game.getPlayer().render(worldShader);
+        game.getPlayer().render(delta, worldShader);
         if (game.getLevel() != null)
         {
             game.getLevel().render(worldShader, delta, time);

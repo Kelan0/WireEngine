@@ -7,7 +7,7 @@ import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
-import wireengine.core.physics.collision.Triangle;
+import wireengine.core.physics.collision.colliders.Triangle;
 import wireengine.core.rendering.ShaderProgram;
 
 import java.nio.Buffer;
@@ -184,6 +184,27 @@ public class Mesh
         return this.faceList;
     }
 
+    public Vertex getFurthestVertex(Vector3f direction)
+    {
+        // Time complexity of this function is O(n), not the best but it will do for now.
+        float max = Float.NEGATIVE_INFINITY;
+        Vertex vertex = null;
+
+        for (int i = 0; i < getNumVertices(); i++)
+        {
+            Vertex v = vertexList.get(i);
+            float f = Vector3f.dot(v.getPosition(), direction);
+
+            if (f > max)
+            {
+                max = f;
+                vertex = v;
+            }
+        }
+
+        return vertex;
+    }
+
     public Mesh transform(Transformation transformation)
     {
         return transform(transformation.getMatrix(null));
@@ -228,31 +249,35 @@ public class Mesh
 
     public Mesh subdivideFaces(int divisions)
     {
-        List<Vertex> vertices = new ArrayList<>(this.vertexList);
-        List<Integer> indices = new ArrayList<>(this.indexList);
-        this.vertexList.clear();
-        this.indexList.clear();
-
-        for (int i = 0; i < getNumIndices(); )
+        System.out.println("Dividing faces.");
+        for (int i = 0; i < divisions; i++)
         {
-            Vertex v1 = vertices.get(indices.get(i++));
-            Vertex v2 = vertices.get(indices.get(i++));
-            Vertex v3 = vertices.get(indices.get(i++));
+            int numIndices = getNumIndices();
+            List<Vertex> vertices = new ArrayList<>(this.vertexList);
+            List<Integer> indices = new ArrayList<>(this.indexList);
+            this.vertexList.clear();
+            this.indexList.clear();
 
-            Vertex v4 = new Vertex((Vector3f) Vector3f.add(v1.position, v2.position, null).scale(0.5F), new Vector3f(), new Vector2f());
-            Vertex v5 = new Vertex((Vector3f) Vector3f.add(v2.position, v3.position, null).scale(0.5F), new Vector3f(), new Vector2f());
-            Vertex v6 = new Vertex((Vector3f) Vector3f.add(v3.position, v1.position, null).scale(0.5F), new Vector3f(), new Vector2f());
+            for (int j = 0; j < numIndices; )
+            {
+                Vertex v1 = vertices.get(indices.get(j++));
+                Vertex v2 = vertices.get(indices.get(j++));
+                Vertex v3 = vertices.get(indices.get(j++));
 
-            this.addFace(new Face3(v1, v4, v6));
-            this.addFace(new Face3(v2, v5, v4));
-            this.addFace(new Face3(v3, v6, v5));
-            this.addFace(new Face3(v4, v5, v6));
+                Vertex v4 = new Vertex((Vector3f) Vector3f.add(v1.position, v2.position, null).scale(0.5F), new Vector3f(), new Vector2f());
+                Vertex v5 = new Vertex((Vector3f) Vector3f.add(v2.position, v3.position, null).scale(0.5F), new Vector3f(), new Vector2f());
+                Vertex v6 = new Vertex((Vector3f) Vector3f.add(v3.position, v1.position, null).scale(0.5F), new Vector3f(), new Vector2f());
+
+                this.addFace(new Face3(v1, v4, v6));
+                this.addFace(new Face3(v2, v5, v4));
+                this.addFace(new Face3(v3, v6, v5));
+                this.addFace(new Face3(v4, v5, v6));
+            }
+            vertices.clear();
+            indices.clear();
         }
 
-        vertices.clear();
-        indices.clear();
-
-        return compile();
+        return this.compile();
     }
 
     public Mesh addFaces(Face[] faces)
@@ -397,6 +422,7 @@ public class Mesh
     public Mesh compile()
     {
         this.setupFaces();
+        System.out.println("Compiled mesh with " + this.faceList.size() + " faces and " + this.vertexList.size() + " vertices");
 
         float[] vertices = new float[vertexList.size() * VERTEX_SIZE_FLOATS];
         int[] indices = new int[indexList.size()];
@@ -524,6 +550,21 @@ public class Mesh
         public Vertex(Vector3f position, Vector3f normal, Vector2f texture)
         {
             this(position, normal, texture, new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
+        }
+
+        public Vertex(Vector3f position, Vector3f normal)
+        {
+            this(position, normal, new Vector2f(), new Vector4f());
+        }
+
+        public Vertex transform(Transformation transformation)
+        {
+            Matrix4f matrix = transformation.getMatrix(null);
+            Vector4f pos = new Vector4f(this.position.x, this.position.y, this.position.z, 1.0F);
+            Matrix4f.transform(matrix, pos, pos);
+            this.position.set(pos);
+
+            return this;
         }
 
         public Vector3f getPosition()
@@ -674,7 +715,7 @@ public class Mesh
 
     public static class Face3 implements Face
     {
-        Material material;
+        Material material = Material.NO_MATERIAL;
         Vertex[] vertices = new Vertex[3];
 
         public Face3(Vertex v1, Vertex v2, Vertex v3)

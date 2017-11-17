@@ -65,6 +65,26 @@ public class MathUtils
         return new Vector3f(a.x / b.x, a.y / b.y, a.z / b.z);
     }
 
+    public static float getVectorElement(ReadableVector3f vector, int i)
+    {
+        return getVectorArray(vector)[i];
+    }
+
+    public static float[] getVectorArray(ReadableVector4f vector)
+    {
+        return new float[]{vector.getX(), vector.getY(), vector.getZ(), vector.getW()};
+    }
+
+    public static float[] getVectorArray(ReadableVector3f vector)
+    {
+        return new float[]{vector.getX(), vector.getY(), vector.getZ()};
+    }
+
+    public static float[] getVectorArray(ReadableVector2f vector)
+    {
+        return new float[]{vector.getX(), vector.getY()};
+    }
+
     public static float distanceSquared(Vector3f a, Vector3f b)
     {
         return direction(a, b).lengthSquared();
@@ -353,7 +373,7 @@ public class MathUtils
 
     public static Vector3f abs(Vector3f vector)
     {
-        return new Vector3f(Math.abs(vector.x), Math.abs(vector.y),Math.abs(vector.z));
+        return new Vector3f(Math.abs(vector.x), Math.abs(vector.y), Math.abs(vector.z));
     }
 
 

@@ -9,8 +9,10 @@ import wireengine.core.rendering.ShaderProgram;
  */
 public class Material
 {
+    public static Material NO_MATERIAL = new Material("no_material");
+
     /** The name of this material */
-    protected String name;
+    protected String name = "invalid_material";
 
     /** The ambient colour of this material */
     protected Vector3f ambientColour = new Vector3f(0.0F, 0.0F, 0.0F);
@@ -22,13 +24,13 @@ public class Material
     protected Vector4f specularColour = new Vector4f(0.0F, 0.0F, 0.0F, 1.0F);
 
     /** The diffuse texture of this material. This is multiplied by the diffuse colour */
-    protected Texture diffuseTexture;
+    protected Texture diffuseTexture = null;
 
     /** The specular texture of this material. This is multiplied by the specular colour */
-    protected Texture specularTexture;
+    protected Texture specularTexture = null;
 
     /** The diffuse texture of this material. This is multiplied by the diffuse colour */
-    protected Texture ambientTexture;
+    protected Texture ambientTexture = null;
 
     public Material(String name)
     {

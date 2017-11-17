@@ -1,9 +1,7 @@
-package wireengine.core.physics.collision;
+package wireengine.core.physics.collision.colliders;
 
 import org.lwjgl.util.vector.ReadableVector3f;
 import org.lwjgl.util.vector.Vector3f;
-import org.lwjgl.util.vector.Vector4f;
-import wireengine.core.rendering.ShaderProgram;
 import wireengine.core.util.MathUtils;
 
 /**
@@ -15,11 +13,18 @@ public class Triangle
     private Vector3f p2;
     private Vector3f p3;
 
+    private Vector3f position;
     private Vector3f normal;
+
+    public Triangle(Vector3f p1, Vector3f p2, Vector3f p3, Vector3f position)
+    {
+        this.set(p1, p2, p3);
+        this.position = position;
+    }
 
     public Triangle(Vector3f p1, Vector3f p2, Vector3f p3)
     {
-        this.set(p1, p2, p3);
+        this(p1, p2, p3, new Vector3f());
     }
 
     public void set(Vector3f p1, Vector3f p2, Vector3f p3)
@@ -70,9 +75,14 @@ public class Triangle
         return new Vector3f(normal);
     }
 
-    public Vector3f getPosition()
+    public Vector3f getCentre()
     {
         return MathUtils.averageVector3f(p1, p2, p3);
+    }
+
+    public Vector3f getPosition()
+    {
+        return position;
     }
 
     public void setP1(Vector3f p1)
@@ -99,11 +109,17 @@ public class Triangle
         }
     }
 
+    public void setPosition(Vector3f position)
+    {
+        this.position = position;
+    }
+
     /**
      * Get the closest point on the surface of this triangle to {@code point}
      */
     public Vector3f getClosestPoint(Vector3f p)
     {
+        p = Vector3f.sub(p, position, null);
         // Implementation adapted from https://www.gamedev.net/forums/topic/552906-closest-point-on-triangle/
 
         Vector3f aEdge = Vector3f.sub(this.p2, this.p1, null);
@@ -197,6 +213,7 @@ public class Triangle
      */
     public boolean pointIntersects(Vector3f p)
     {
+        p = Vector3f.sub(p, position, null);
         //Implementation adapted from https://www.braynzarsoft.net/viewtutorial/q16390-31-sliding-camera-collision-detection
         Vector3f cp1, cp2;
 

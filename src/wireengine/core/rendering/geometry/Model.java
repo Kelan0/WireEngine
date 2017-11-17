@@ -1,6 +1,7 @@
 package wireengine.core.rendering.geometry;
 
 import org.lwjgl.util.vector.Matrix4f;
+import org.lwjgl.util.vector.Vector3f;
 import wireengine.core.rendering.ShaderProgram;
 
 import static org.lwjgl.opengl.GL11.*;

@@ -4,11 +4,11 @@ import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
 import wireengine.core.level.Level;
-import wireengine.core.physics.collision.Triangle;
+import wireengine.core.physics.collision.colliders.Triangle;
 import wireengine.core.rendering.ShaderProgram;
 import wireengine.core.rendering.renderer.DebugRenderer;
 
-import static org.lwjgl.opengl.GL11.GL_LINES;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author Kelan
@@ -38,48 +38,66 @@ public class PhysicsObject implements IPhysicsObject
     @Override
     public synchronized void tick(double delta)
     {
-        Level level = WireEngine.engine().getGame().getLevel();
-        float friction = 5.6F;
+        float velocityDamper = 5.6F; //kind of like friction I guess.
 
         getVelocity().x += getAcceleration().x * delta;
         getVelocity().y += getAcceleration().y * delta;
         getVelocity().z += getAcceleration().z * delta;
 
-//        level.collideWith(this, delta);
-
-        if (this.acceleration.lengthSquared() <= 0.0F)
+        float dot = Vector3f.dot(this.velocity, this.acceleration);
+        if (dot <= 0.0F) //TODo: scale the velocity damper value based on how much the velocity and the acceleration face in the same direction.
         {
-            this.velocity.x /= (1.0F + friction * delta);
-            this.velocity.y /= (1.0F + friction * delta);
-            this.velocity.z /= (1.0F + friction * delta);
+            this.velocity.x /= 1.0F + velocityDamper * delta;
+            this.velocity.y /= 1.0F + velocityDamper * delta;
+            this.velocity.z /= 1.0F + velocityDamper * delta;
         }
 
         getPosition().x += getVelocity().x * delta;// + 0.5F * object.getAcceleration().x * delta * delta;
         getPosition().y += getVelocity().y * delta;// + 0.5F * object.getAcceleration().y * delta * delta;
         getPosition().z += getVelocity().z * delta;// + 0.5F * object.getAcceleration().z * delta * delta;
+        updateColliders();
         this.acceleration = new Vector3f();
     }
 
-    public void renderDebug(ShaderProgram shaderProgram, Vector4f colour)
+    private void updateColliders()
     {
-        DebugRenderer.getInstance().begin(GL_LINES);
+        for (Triangle t : this.colliders)
+        {
+            t.setPosition(this.position);
+        }
+    }
+
+    public void renderDebug(ShaderProgram shaderProgram, Vector4f colour, int renderMode)
+    {
+        DebugRenderer.getInstance().begin(renderMode);
+        DebugRenderer.getInstance().translate(this.position);
+
         if (this.colliders != null && this.colliders.length > 0)
         {
             for (Triangle triangle : this.colliders)
             {
                 DebugRenderer.getInstance().addColour(colour);
-                DebugRenderer.getInstance().addVertex(triangle.getP1());
-                DebugRenderer.getInstance().addVertex(triangle.getP2());
 
-                DebugRenderer.getInstance().addVertex(triangle.getP2());
-                DebugRenderer.getInstance().addVertex(triangle.getP3());
+                if (renderMode == GL_LINES)
+                {
+                    DebugRenderer.getInstance().addVertex(triangle.getP1());
+                    DebugRenderer.getInstance().addVertex(triangle.getP2());
 
-                DebugRenderer.getInstance().addVertex(triangle.getP3());
-                DebugRenderer.getInstance().addVertex(triangle.getP1());
+                    DebugRenderer.getInstance().addVertex(triangle.getP2());
+                    DebugRenderer.getInstance().addVertex(triangle.getP3());
 
-                DebugRenderer.getInstance().addColour(new Vector4f(1.0F, 0.0F, 0.0F, 1.0F));
-                DebugRenderer.getInstance().addVertex(triangle.getPosition());
-                DebugRenderer.getInstance().addVertex(Vector3f.add(triangle.getPosition(), (Vector3f) new Vector3f(triangle.getNormal()).scale(0.25F), null));
+                    DebugRenderer.getInstance().addVertex(triangle.getP3());
+                    DebugRenderer.getInstance().addVertex(triangle.getP1());
+
+                    DebugRenderer.getInstance().addColour(new Vector4f(1.0F, 0.0F, 0.0F, 1.0F));
+                    DebugRenderer.getInstance().addVertex(triangle.getCentre());
+                    DebugRenderer.getInstance().addVertex(Vector3f.add(triangle.getCentre(), (Vector3f) new Vector3f(triangle.getNormal()).scale(0.25F), null));
+                } else if (renderMode == GL_TRIANGLES || renderMode == GL_POINTS || renderMode == GL_LINE_LOOP)
+                {
+                    DebugRenderer.getInstance().addVertex(triangle.getP1());
+                    DebugRenderer.getInstance().addVertex(triangle.getP2());
+                    DebugRenderer.getInstance().addVertex(triangle.getP3());
+                }
             }
         }
         DebugRenderer.getInstance().end(shaderProgram);

@@ -3,16 +3,17 @@ package wireengine.core.level;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
-import wireengine.core.physics.collision.Triangle;
+import wireengine.core.physics.PhysicsObject;
+import wireengine.core.physics.collision.ColliderMesh;
+import wireengine.core.physics.collision.CollisionResult;
+import wireengine.core.physics.collision.colliders.Triangle;
 import wireengine.core.rendering.ShaderProgram;
 import wireengine.core.rendering.geometry.Mesh;
 import wireengine.core.rendering.geometry.MeshHelper;
 import wireengine.core.rendering.geometry.Model;
-import wireengine.core.rendering.geometry.Transformation;
 import wireengine.core.rendering.renderer.DebugRenderer;
 import wireengine.core.window.InputHandler;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,10 +24,11 @@ import static org.lwjgl.opengl.GL11.*;
  */
 public class Level
 {
-    private Triangle[] colliders;
+    private ColliderMesh collider;
     private Model staticScene;
     private List<Model> dynamicScene;
     private boolean renderHitbox;
+    public Model testModel;
 
     public Level()
     {
@@ -36,30 +38,41 @@ public class Level
     public void init()
     {
         this.dynamicScene = new ArrayList<>();
-        try
-        {
-            Mesh sceneMesh = MeshHelper.parseObj("res/level/testlevel/testlevel.obj");
+//
+        this.testModel = new Model(MeshHelper.createCube(1.0F, 1.5F, 1.0F).subdivideFaces(3));
+        this.addDynamicMesh(testModel);
 
-            this.staticScene = new Model(sceneMesh, new Transformation());
+//        Mesh mesh = MeshHelper.createPlane(15.0F, 15.0F, 15, 15, Axis.getyAxisOnly());
+//        Mesh mesh = MeshHelper.createUVSphere(1.0F, 20, 20);
+//        this.staticScene = new Model(mesh, new Transformation());
+//
+//        this.colliders = Colliders.getMesh(mesh);
 
-            List<Triangle> triangles = new ArrayList<>();
-            for (Mesh.Face3 face : sceneMesh.getFaceList())
-            {
-                Vector3f p1 = face.getV1().getPosition();
-                Vector3f p2 = face.getV2().getPosition();
-                Vector3f p3 = face.getV3().getPosition();
-
-                Triangle triangle = new Triangle(p1, p2, p3);
-                triangles.add(triangle);
-            }
-
-            this.colliders = new Triangle[0]; // Colliders.getMesh(sceneMesh);
-//            WireEngine.engine().getPhysicsEngine().addPhysicsObject(this.physicsObject);
-
-        } catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+//        try
+//        {
+//            Mesh mesh = MeshHelper.parseObj("res/level/testlevel/testlevel.obj");
+////            Mesh sceneMesh = MeshHelper.createPlane(10.0F, 10.0F, 10, 10, Axis.getWorldAxis());
+//
+//            this.staticScene = new Model(mesh, new Transformation());
+//
+//            List<Triangle> triangles = new ArrayList<>();
+//            for (Mesh.Face3 face : mesh.getFaceList())
+//            {
+//                Vector3f p1 = face.getV1().getPosition();
+//                Vector3f p2 = face.getV2().getPosition();
+//                Vector3f p3 = face.getV3().getPosition();
+//
+//                Triangle triangle = new Triangle(p1, p2, p3);
+//                triangles.add(triangle);
+//            }
+//
+//            this.collider = new ColliderMesh(mesh, new Transformation());
+////            WireEngine.engine().getPhysicsEngine().addPhysicsObject(this.physicsObject);
+//
+//        } catch (Exception e)
+//        {
+//            e.printStackTrace();
+//        }
     }
 
     public void cleanup()
@@ -67,13 +80,31 @@ public class Level
 
     }
 
+    public List<CollisionResult> getCollision(PhysicsObject object, double delta)
+    {
+        return new ArrayList<>(); //CollisionHandler.getCollision(object, this.colliders, delta);
+    }
+
     public void render(ShaderProgram shaderProgram, double delta, double time)
     {
-        this.staticScene.render(shaderProgram);
+        this.renderFloorGrid(shaderProgram);
 
-        for (Model model : this.dynamicScene)
+        if (this.staticScene != null)
         {
-            model.render(shaderProgram);
+            this.staticScene.render(shaderProgram);
+        }
+
+        if (this.dynamicScene != null)
+        {
+            for (Model model : this.dynamicScene)
+            {
+                if (model == null)
+                {
+                    continue;
+                }
+
+                model.render(shaderProgram);
+            }
         }
 
         if (InputHandler.keyPressed(GLFW.GLFW_KEY_F2))
@@ -83,12 +114,21 @@ public class Level
 
         if (renderHitbox)
         {
+            this.renderHitboxes(shaderProgram);
+        }
+
+    }
+
+    private void renderHitboxes(ShaderProgram shaderProgram)
+    {
+        if (collider != null && collider.getNumTriangles() > 0)
+        {
             glEnable(GL_LINE_SMOOTH);
             glDisable(GL_DEPTH_TEST);
             DebugRenderer.getInstance().begin(GL_LINES);
-            for (Triangle tri : this.colliders)
+            for (Triangle tri : this.collider.getTriangles())
             {
-                Vector3f p1 = tri.getPosition();
+                Vector3f p1 = tri.getCentre();
                 Vector3f p2 = Vector3f.add(new Vector3f(tri.getNormal()), p1, null);
 
                 DebugRenderer.getInstance().addColour(new Vector4f(1.0F, 0.0F, 0.0F, 1.0F));
@@ -108,14 +148,55 @@ public class Level
         }
     }
 
+    private void renderFloorGrid(ShaderProgram shaderProgram)
+    {
+        glEnable(GL_LINE_SMOOTH);
+        glEnable(GL_DEPTH_TEST);
+        int radius = 10;
+        int sub = 3; //The number of times to subdivide.
+
+        DebugRenderer.getInstance().begin(GL_LINES);
+
+        for (int a = 1; a <= sub; a++)
+        {
+            int power = 1 << (a - 1);
+            float incr = 1.0F / power; // 2^(-a)
+            int div = (int) (radius / incr);
+
+            DebugRenderer.getInstance().addColour(new Vector4f(incr, incr, incr, 1.0F));
+            for (int i = -div; i <= div; i++)
+            {
+                DebugRenderer.getInstance().addVertex(new Vector3f(i * incr, 0.0F, -radius));
+                DebugRenderer.getInstance().addVertex(new Vector3f(i * incr, 0.0F, +radius));
+                DebugRenderer.getInstance().addVertex(new Vector3f(-radius, 0.0F, i * incr));
+                DebugRenderer.getInstance().addVertex(new Vector3f(+radius, 0.0F, i * incr));
+            }
+        }
+        DebugRenderer.getInstance().end(shaderProgram);
+    }
+
     public void addStaticMesh(Model model)
     {
-        addStaticMesh(model.getMesh().transform(model.getTransformation().getMatrix(null)));
+        if (model != null)
+        {
+            addStaticMesh(model.getMesh().transform(model.getTransformation().getMatrix(null)));
+        }
     }
 
     public void addStaticMesh(Mesh mesh)
     {
-        this.staticScene.getMesh().addMesh(mesh);
+        if (mesh != null)
+        {
+            this.staticScene.getMesh().addMesh(mesh);
+        }
+    }
+
+    public void addDynamicMesh(Model model)
+    {
+        if (model != null)
+        {
+            this.dynamicScene.add(model);
+        }
     }
 
     public Model getSceneMesh()

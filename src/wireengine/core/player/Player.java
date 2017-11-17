@@ -4,15 +4,21 @@ import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
 import wireengine.core.physics.PhysicsObject;
-import wireengine.core.physics.collision.Colliders;
+import wireengine.core.physics.collision.*;
+import wireengine.core.physics.collision.colliders.Triangle;
+import wireengine.core.physics.collision.handler.TriangleTriangleCollisionHandler;
 import wireengine.core.rendering.Axis;
 import wireengine.core.rendering.Camera;
 import wireengine.core.rendering.ShaderProgram;
+import wireengine.core.rendering.geometry.Mesh;
 import wireengine.core.rendering.renderer.DebugRenderer;
 import wireengine.core.util.MathUtils;
 import wireengine.core.window.InputHandler;
 
+import java.util.List;
+
 import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.opengl.GL11.*;
 import static wireengine.core.util.Constants.HALF_PI;
 import static wireengine.core.util.Constants.RADIANS;
 
@@ -43,18 +49,26 @@ public class Player
     {
 //        new Ellipsoid(new Vector3f(0.0F, this.currentHeight * 0.5F + 0.05F, 0.0F), new Vector3f(playerSize, currentHeight * 0.5F + 0.1f, playerSize))
         this.physicsObject = new PhysicsObject(Colliders.getEllipsoid(1, new Vector3f(playerSize, currentHeight * 0.5F + 0.1F, playerSize)), 70.0F);
-        WireEngine.engine().getPhysicsEngine().addPhysicsObject(this.physicsObject);
 //        debug = new Triangle(new Vector3f(10.0F, 0.0F, 1.0f), new Vector3f(10.0F, 3.0F, -4.0F), new Vector3f(12.0F, -1.0F, -4.5F));
+//        this.test1 = new PhysicsObject(new Triangle[]{new Triangle(new Vector3f(-1.0F, 0.0F, 1.5F), new Vector3f(-0.8F, 1.8F, 0.6F), new Vector3f(0.2F, 0.7F, -1.4F))}, 70.0F);
+//        this.test2 = new PhysicsObject(new Triangle[]{new Triangle(new Vector3f(0.0F, 0.5F, 1.2F), new Vector3f(0.5F, 0.8F, -1.7F), new Vector3f(-1.2F, 0.7F, 0.5F))}, 70.0F);
+
+        WireEngine.engine().getPhysicsEngine().addPhysicsObject(this.physicsObject);
     }
 
-    public void render(ShaderProgram shaderProgram)
+    public void render(double delta, ShaderProgram shaderProgram)
     {
         camera.setPosition(this.getHeadPosition());
         camera.render(shaderProgram);
 
-        this.physicsObject.renderDebug(shaderProgram, new Vector4f(0.0F, 1.0F, 0.0F, 1.0F));
-
-        DebugRenderer.getInstance().end(shaderProgram);
+//        WireEngine.engine().getGame().getLevel().testModel.getTransformation().rotate(new Vector3f(0.0F, (float) delta, 0.0F));
+//        Mesh.Vertex furthestVertex = WireEngine.engine().getGame().getLevel().testModel.getFurthestVertex(this.camera.getAxis().getZ().negate(null));
+//
+//        glPointSize(10.0F);
+//        DebugRenderer.getInstance().begin(GL_POINTS);
+//        DebugRenderer.getInstance().addColour(new Vector4f(1.0F, 0.0F, 0.0F, 1.0F));
+//        DebugRenderer.getInstance().addVertex(furthestVertex.getPosition());
+//        DebugRenderer.getInstance().end(shaderProgram);
     }
 
     public void handleInput(double delta)
@@ -168,7 +182,6 @@ public class Player
             camera.rotatePitch(pitch);
             camera.rotateYaw(yaw);
         }
-
         Vector3f euler = MathUtils.quaternionToEuler(camera.getOrientation(), null);
         camera.rotatePitch((float) (euler.x > +HALF_PI ? +HALF_PI - euler.x : (euler.x < -HALF_PI ? -HALF_PI - euler.x : 0.0F)));
     }

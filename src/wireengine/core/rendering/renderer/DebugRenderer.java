@@ -3,6 +3,7 @@ package wireengine.core.rendering.renderer;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.util.vector.*;
 import wireengine.core.rendering.ShaderProgram;
+import wireengine.core.rendering.geometry.Transformation;
 
 import java.nio.Buffer;
 import java.nio.FloatBuffer;
@@ -32,6 +33,7 @@ public class DebugRenderer
     private Vector3f currentNormal = new Vector3f();
     private Vector2f currentTexture = new Vector2f();
     private Vector4f currentColour = new Vector4f(1.0F, 1.0F, 1.0F, 1.0F); //If no colour is specified, use white.
+    private Transformation transformation = new Transformation();
 
     private DebugRenderer()
     {
@@ -70,6 +72,7 @@ public class DebugRenderer
         this.currentTexture = new Vector2f();
         this.currentColour = new Vector4f(1.0F, 1.0F, 1.0F, 1.0F);
         this.data.clear();
+        this.transformation = new Transformation();
     }
 
     public void begin(int primitive)
@@ -77,6 +80,21 @@ public class DebugRenderer
         this.reset();
         this.primitive = primitive;
         this.running = true;
+    }
+
+    public void translate(ReadableVector3f translation)
+    {
+        this.transformation.translate(new Vector3f(translation));
+    }
+
+    public void rotate(ReadableVector3f axis, float angle)
+    {
+        this.transformation.rotate(new Vector3f(axis), angle);
+    }
+
+    public void scale(ReadableVector3f scale)
+    {
+        this.transformation.scale(new Vector3f(scale));
     }
 
     public void addVertex(ReadableVector3f v)
@@ -121,6 +139,8 @@ public class DebugRenderer
     {
         glDisable(GL_TEXTURE_2D);
         shaderProgram.setUniformBoolean("useTexture", false);
+        shaderProgram.setUniformMatrix4f("modelMatrix", this.transformation.getMatrix(null));
+
         if (this.primitive >= 0 && this.primitive < 10)
         {
             glBindVertexArray(vao);
@@ -129,22 +149,11 @@ public class DebugRenderer
             glEnableVertexAttribArray(ATTRIBUTE_LOCATION_TEXTURE);
             glEnableVertexAttribArray(ATTRIBUTE_LOCATION_COLOUR);
 
+            glDisable(GL_CULL_FACE);
             FloatBuffer buffer = this.createBuffer();
             upload(buffer, GL_ARRAY_BUFFER, vbo, FLOAT_SIZE_BYTES, 0, 0);
-
-//            System.out.println("render");
-//            while (buffer.hasRemaining())
-//            {
-//                StringBuilder sb = new StringBuilder();
-//                for (int i = 0; i < VERTEX_SIZE_FLOATS; i++)
-//                {
-//                    sb.append(buffer.get()).append(", ");
-//                }
-//
-//                System.out.println(sb.append("\b\b"));
-//            }
-
             glDrawArrays(this.primitive, 0, numVertices);
+            glEnable(GL_CULL_FACE);
 
             glDisableVertexAttribArray(ATTRIBUTE_LOCATION_POSITION);
             glDisableVertexAttribArray(ATTRIBUTE_LOCATION_NORMAL);
