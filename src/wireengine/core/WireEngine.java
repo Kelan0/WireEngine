@@ -76,6 +76,18 @@ public final class WireEngine
         WireEngine.instance.stop();
     }
 
+    public static boolean isRenderThread()
+    {
+        return false;
+//        return Thread.currentThread().getName().equals(WireEngine.engine().getRenderEngine().getThreadName());
+    }
+
+    public static boolean isPhysicsThread()
+    {
+        return false;
+//        return Thread.currentThread().getName().equals(WireEngine.engine().getPhysicsEngine().getThreadName());
+    }
+
     public void handleInput(double delta)
     {
         this.game.handleInput(delta);

@@ -81,9 +81,9 @@ C  [lwjgl_opengl.dll+0x846d]
 Java frames: (J=compiled Java code, j=interpreted, Vv=VM code)
 j  org.lwjgl.opengl.GL30.nglGenVertexArrays(IJ)V+0
 j  org.lwjgl.opengl.GL30.glGenVertexArrays()I+20
-j  wireengine.core.rendering.geometry.Mesh.create(F)Lwireengine/core/rendering/geometry/Mesh;+10
-j  wireengine.core.rendering.geometry.Mesh.create()Lwireengine/core/rendering/geometry/Mesh;+2
-j  wireengine.core.rendering.geometry.MeshHelper.createCube(FFF)Lwireengine/core/rendering/geometry/Mesh;+398
+j  wireengine.core.rendering.geometry.GLMesh.create(F)Lwireengine/core/rendering/geometry/Mesh;+10
+j  wireengine.core.rendering.geometry.GLMesh.create()Lwireengine/core/rendering/geometry/Mesh;+2
+j  createCuboid(FFF)Lwireengine/core/rendering/geometry/Mesh;+398
 j  wireengine.testgame.TestGame.postInit()V+24
 j  wireengine.core.WireEngine.createEngine(Lwireengine/testgame/Game;)V+93
 j  wireengine.testgame.TestGame.main([Ljava/lang/String;)V+14

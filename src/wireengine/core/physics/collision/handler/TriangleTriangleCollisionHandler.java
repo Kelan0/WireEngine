@@ -19,7 +19,7 @@ public class TriangleTriangleCollisionHandler
     {
         List<CollisionResult> collisions = new ArrayList<>();
 
-//        for (Triangle ta : aObject.getColliders())
+//        for (Triangle ta : aObject.getTriangles())
 //        {
 //            for (Triangle tb : staticColliders)
 //            {
@@ -34,9 +34,9 @@ public class TriangleTriangleCollisionHandler
     {
         List<CollisionResult> collisions = new ArrayList<>();
 
-        for (Triangle ta : aObject.getColliders())
+        for (Triangle ta : aObject.getTriangles())
         {
-            for (Triangle tb : bObject.getColliders())
+            for (Triangle tb : bObject.getTriangles())
             {
                 float epsilon = 0.0001F;
                 CollisionResult collision = new CollisionResult(aObject, bObject);

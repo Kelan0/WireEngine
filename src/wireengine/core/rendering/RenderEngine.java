@@ -2,6 +2,7 @@ package wireengine.core.rendering;
 
 import wireengine.core.TickableThread;
 import wireengine.core.WireEngine;
+import wireengine.core.entity.Entity;
 import wireengine.core.event.Event;
 import wireengine.core.event.events.TickEvent;
 import wireengine.core.rendering.renderer.DebugRenderer;

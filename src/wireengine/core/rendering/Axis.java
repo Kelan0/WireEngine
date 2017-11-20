@@ -115,20 +115,6 @@ public class Axis
         return dest;
     }
 
-    public Vector3f transform(Vector3f translation, Vector3f dest)
-    {
-        if (dest == null)
-        {
-            dest = new Vector3f();
-        }
-
-        dest.x += (translation.x * this.getLeft().x) + (translation.y * this.getUp().x) + (translation.z * this.getForward().x);
-        dest.y += (translation.x * this.getLeft().y) + (translation.y * this.getUp().y) + (translation.z * this.getForward().y);
-        dest.z += (translation.x * this.getLeft().z) + (translation.y * this.getUp().z) + (translation.z * this.getForward().z);
-
-        return dest;
-    }
-
     public Axis scale(Vector3f scale, Axis dest)
     {
         if (dest == null)
@@ -139,6 +125,34 @@ public class Axis
         dest.setX(new Vector3f(this.getX().x * scale.x, this.getX().y * scale.y, this.getX().z * scale.z));
         dest.setY(new Vector3f(this.getY().x * scale.x, this.getY().y * scale.y, this.getY().z * scale.z));
         dest.setZ(new Vector3f(this.getZ().x * scale.x, this.getZ().y * scale.y, this.getZ().z * scale.z));
+
+        return dest;
+    }
+
+    public Vector3f transform(Vector3f point, Vector3f dest)
+    {
+        if (dest == null)
+        {
+            dest = new Vector3f();
+        }
+
+        dest.x += (point.x * this.getLeft().x) + (point.y * this.getUp().x) + (point.z * this.getForward().x);
+        dest.y += (point.x * this.getLeft().y) + (point.y * this.getUp().y) + (point.z * this.getForward().y);
+        dest.z += (point.x * this.getLeft().z) + (point.y * this.getUp().z) + (point.z * this.getForward().z);
+
+        return dest;
+    }
+
+    public Vector3f invTransform(Vector3f point, Vector3f dest)
+    {
+        if (dest == null)
+        {
+            dest = new Vector3f();
+        }
+
+        dest.x += (this.getLeft().x * point.x) + (this.getUp().y * point.x) + (this.getForward().z * point.x);
+        dest.y += (this.getLeft().x * point.y) + (this.getUp().y * point.y) + (this.getForward().z * point.y);
+        dest.z += (this.getLeft().x * point.z) + (this.getUp().y * point.z) + (this.getForward().z * point.z);
 
         return dest;
     }

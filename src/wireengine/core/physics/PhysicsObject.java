@@ -2,11 +2,13 @@ package wireengine.core.physics;
 
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
-import wireengine.core.WireEngine;
-import wireengine.core.level.Level;
+import wireengine.core.physics.collision.Collider;
 import wireengine.core.physics.collision.colliders.Triangle;
 import wireengine.core.rendering.ShaderProgram;
 import wireengine.core.rendering.renderer.DebugRenderer;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -15,7 +17,7 @@ import static org.lwjgl.opengl.GL11.*;
  */
 public class PhysicsObject implements IPhysicsObject
 {
-    protected Triangle[] colliders;
+    protected Collider collider;
     protected Vector3f position = new Vector3f();
     protected Vector3f velocity = new Vector3f();
     protected Vector3f acceleration = new Vector3f();
@@ -23,16 +25,21 @@ public class PhysicsObject implements IPhysicsObject
     protected boolean onGround = false;
     protected final boolean isStatic;
 
-    public PhysicsObject(Triangle[] colliders, float mass, boolean isStatic)
+    public PhysicsObject(Collider collider, float mass, boolean isStatic)
     {
-        this.colliders = colliders;
+        this.collider = collider;
         this.mass = mass;
         this.isStatic = isStatic;
+
+        if (collider != null)
+        {
+            this.position = collider.getTransformation().getTranslation();
+        }
     }
 
-    public PhysicsObject(Triangle[] colliders, float mass)
+    public PhysicsObject(Collider collider, float mass)
     {
-        this(colliders, mass, false);
+        this(collider, mass, false);
     }
 
     @Override
@@ -61,9 +68,9 @@ public class PhysicsObject implements IPhysicsObject
 
     private void updateColliders()
     {
-        for (Triangle t : this.colliders)
+        if (this.collider != null)
         {
-            t.setPosition(this.position);
+            this.collider.getTransformation().setTranslation(this.position);
         }
     }
 
@@ -72,9 +79,9 @@ public class PhysicsObject implements IPhysicsObject
         DebugRenderer.getInstance().begin(renderMode);
         DebugRenderer.getInstance().translate(this.position);
 
-        if (this.colliders != null && this.colliders.length > 0)
+        if (this.collider != null && this.collider.getNumTriangles() > 0)
         {
-            for (Triangle triangle : this.colliders)
+            for (Triangle triangle : this.collider.getTriangles())
             {
                 DebugRenderer.getInstance().addColour(colour);
 
@@ -160,8 +167,13 @@ public class PhysicsObject implements IPhysicsObject
         return onGround;
     }
 
-    public synchronized Triangle[] getColliders()
+    public synchronized List<Triangle> getTriangles()
     {
-        return colliders;
+        if (this.collider != null)
+        {
+            return this.collider.getTriangles();
+        }
+
+        return new ArrayList<>();
     }
 }

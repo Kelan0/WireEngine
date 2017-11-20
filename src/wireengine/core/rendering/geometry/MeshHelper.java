@@ -6,7 +6,7 @@ import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
 import wireengine.core.rendering.Axis;
 import wireengine.core.util.FileUtils;
-import wireengine.core.util.StringUtils;
+import wireengine.core.util.Utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,37 +44,41 @@ public class MeshHelper
     public static final String MTL_TEXTURE_TURBULENCE = "-t ";
     public static final String MTL_TEXTURE_RESOLUTION = "-texres ";
 
-    public static Mesh createCube(float xSize, float ySize, float zSize)
+    public static GLMesh createCuboid(Vector3f size)
     {
-        xSize *= 0.5;
-        ySize *= 0.5;
-        zSize *= 0.5;
+        if (size == null)
+        {
+            size = new Vector3f(0.5F, 0.5F, 0.5F);
+        } else
+        {
+            size.scale(0.5F);
+        }
 
-        Mesh.Vertex v0 = new Mesh.Vertex(new Vector3f(-xSize, -ySize, -zSize), new Vector3f(), new Vector2f());
-        Mesh.Vertex v1 = new Mesh.Vertex(new Vector3f(-xSize, -ySize, +zSize), new Vector3f(), new Vector2f());
-        Mesh.Vertex v2 = new Mesh.Vertex(new Vector3f(-xSize, +ySize, +zSize), new Vector3f(), new Vector2f());
-        Mesh.Vertex v3 = new Mesh.Vertex(new Vector3f(-xSize, +ySize, -zSize), new Vector3f(), new Vector2f());
-        Mesh.Vertex v4 = new Mesh.Vertex(new Vector3f(+xSize, -ySize, -zSize), new Vector3f(), new Vector2f());
-        Mesh.Vertex v5 = new Mesh.Vertex(new Vector3f(+xSize, -ySize, +zSize), new Vector3f(), new Vector2f());
-        Mesh.Vertex v6 = new Mesh.Vertex(new Vector3f(+xSize, +ySize, +zSize), new Vector3f(), new Vector2f());
-        Mesh.Vertex v7 = new Mesh.Vertex(new Vector3f(+xSize, +ySize, -zSize), new Vector3f(), new Vector2f());
+        GLMesh.Vertex v0 = new GLMesh.Vertex(new Vector3f(-size.x, -size.y, -size.z), new Vector3f(), new Vector2f());
+        GLMesh.Vertex v1 = new GLMesh.Vertex(new Vector3f(-size.x, -size.y, +size.z), new Vector3f(), new Vector2f());
+        GLMesh.Vertex v2 = new GLMesh.Vertex(new Vector3f(-size.x, +size.y, +size.z), new Vector3f(), new Vector2f());
+        GLMesh.Vertex v3 = new GLMesh.Vertex(new Vector3f(-size.x, +size.y, -size.z), new Vector3f(), new Vector2f());
+        GLMesh.Vertex v4 = new GLMesh.Vertex(new Vector3f(+size.x, -size.y, -size.z), new Vector3f(), new Vector2f());
+        GLMesh.Vertex v5 = new GLMesh.Vertex(new Vector3f(+size.x, -size.y, +size.z), new Vector3f(), new Vector2f());
+        GLMesh.Vertex v6 = new GLMesh.Vertex(new Vector3f(+size.x, +size.y, +size.z), new Vector3f(), new Vector2f());
+        GLMesh.Vertex v7 = new GLMesh.Vertex(new Vector3f(+size.x, +size.y, -size.z), new Vector3f(), new Vector2f());
 
-        Mesh.Face4 fNegX = new Mesh.Face4(v1, v2, v3, v0);
-        Mesh.Face4 fPosX = new Mesh.Face4(v5, v4, v7, v6);
-        Mesh.Face4 fNegY = new Mesh.Face4(v0, v4, v5, v1);
-        Mesh.Face4 fPosY = new Mesh.Face4(v2, v6, v7, v3);
-        Mesh.Face4 fNegZ = new Mesh.Face4(v7, v4, v0, v3);
-        Mesh.Face4 fPosZ = new Mesh.Face4(v1, v5, v6, v2);
+        GLMesh.Face4 fNegX = new GLMesh.Face4(v1, v2, v3, v0);
+        GLMesh.Face4 fPosX = new GLMesh.Face4(v5, v4, v7, v6);
+        GLMesh.Face4 fNegY = new GLMesh.Face4(v0, v4, v5, v1);
+        GLMesh.Face4 fPosY = new GLMesh.Face4(v2, v6, v7, v3);
+        GLMesh.Face4 fNegZ = new GLMesh.Face4(v7, v4, v0, v3);
+        GLMesh.Face4 fPosZ = new GLMesh.Face4(v1, v5, v6, v2);
 
-        return Mesh.create().addFace(fNegX).addFace(fNegY).addFace(fNegZ).addFace(fPosX).addFace(fPosY).addFace(fPosZ).compile();
+        return GLMesh.create().addFace(fNegX).addFace(fNegY).addFace(fNegZ).addFace(fPosX).addFace(fPosY).addFace(fPosZ).compile();
     }
 
-    public static Mesh createUVSphere(float radius, int xDivisions, int yDivisions)
+    public static GLMesh createUVSphere(float radius, int xDivisions, int yDivisions)
     {
         final float S = 1.0F / (xDivisions - 1.0F);
         final float R = 1.0F / (yDivisions - 1.0F);
 
-        Mesh.Vertex[] vertices = new Mesh.Vertex[yDivisions * xDivisions * 3];
+        List<GLMesh.Vertex> vertices = new ArrayList<>();
 
         int pointer = 0;
         for (int i = 0; i < yDivisions; i++)
@@ -89,16 +93,16 @@ public class MeshHelper
                 Vector3f n = new Vector3f(x, y, z);
                 Vector2f t = new Vector2f(j * S, i * R);
 
-                vertices[pointer++] = new Mesh.Vertex(p, n, t);
+                vertices.add(new GLMesh.Vertex(p, n, t));
             }
         }
 
         int[] indices = new int[yDivisions * xDivisions * 4];
 
         pointer = 0;
-        for (int i = 0; i < yDivisions; i++)
+        for (int i = 0; i < yDivisions - 1; i++)
         {
-            for (int j = 0; j < xDivisions; j++)
+            for (int j = 0; j < xDivisions - 1; j++)
             {
                 indices[pointer++] = i * xDivisions + j;
                 indices[pointer++] = i * xDivisions + (j + 1);
@@ -107,32 +111,32 @@ public class MeshHelper
             }
         }
 
-        Mesh mesh = Mesh.create();
+        GLMesh mesh = GLMesh.create();
 
         for (pointer = 0; pointer < indices.length; )
         {
-            Mesh.Vertex v1 = vertices[indices[pointer++]];
-            Mesh.Vertex v2 = vertices[indices[pointer++]];
-            Mesh.Vertex v3 = vertices[indices[pointer++]];
-            Mesh.Vertex v4 = vertices[indices[pointer++]];
+            GLMesh.Vertex v1 = vertices.get(indices[pointer++]);
+            GLMesh.Vertex v2 = vertices.get(indices[pointer++]);
+            GLMesh.Vertex v3 = vertices.get(indices[pointer++]);
+            GLMesh.Vertex v4 = vertices.get(indices[pointer++]);
 
-            Mesh.Face4 face = new Mesh.Face4(v1, v2, v3, v4);
+            GLMesh.Face4 face = new GLMesh.Face4(v1, v2, v3, v4);
             mesh.addFace(face);
         }
 
         return mesh.compile();
     }
 
-    public static Mesh createCubeSphere(float radius, int divisions)
+    public static GLMesh createCubeSphere(float radius, int divisions)
     {
-        Mesh mesh = createCube(1.0F, 1.0F, 1.0F);
+        GLMesh mesh = createCuboid(null);
 
         for (int i = 0; i < divisions; i++)
         {
             mesh.subdivideFaces(0);
         }
 
-        for (Mesh.Vertex vertex : mesh.vertexList)
+        for (GLMesh.Vertex vertex : mesh.vertexList)
         {
             vertex.position.normalise(vertex.position).scale(radius);
         }
@@ -140,9 +144,9 @@ public class MeshHelper
         return mesh.compile();
     }
 
-    public static Mesh createPlane(float xSize, float ySize, int xDivisions, int yDivisions, Axis axis)
+    public static GLMesh createPlane(float xSize, float ySize, int xDivisions, int yDivisions, Axis axis)
     {
-        Mesh mesh = Mesh.create();
+        GLMesh mesh = GLMesh.create();
 
         float quadWidth = xSize / xDivisions;
         float quadHeight = ySize / yDivisions;
@@ -151,33 +155,33 @@ public class MeshHelper
         {
             for (int j = 0; j < yDivisions - 1; j++)
             {
-                Mesh.Vertex v0 = new Mesh.Vertex(axis.transform(new Vector3f((i + 0) * quadWidth, 0.0F, (j + 1) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
-                Mesh.Vertex v1 = new Mesh.Vertex(axis.transform(new Vector3f((i + 1) * quadWidth, 0.0F, (j + 1) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
-                Mesh.Vertex v2 = new Mesh.Vertex(axis.transform(new Vector3f((i + 1) * quadWidth, 0.0F, (j + 0) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
-                Mesh.Vertex v3 = new Mesh.Vertex(axis.transform(new Vector3f((i + 0) * quadWidth, 0.0F, (j + 0) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
+                GLMesh.Vertex v0 = new GLMesh.Vertex(axis.transform(new Vector3f((i + 0) * quadWidth, 0.0F, (j + 1) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
+                GLMesh.Vertex v1 = new GLMesh.Vertex(axis.transform(new Vector3f((i + 1) * quadWidth, 0.0F, (j + 1) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
+                GLMesh.Vertex v2 = new GLMesh.Vertex(axis.transform(new Vector3f((i + 1) * quadWidth, 0.0F, (j + 0) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
+                GLMesh.Vertex v3 = new GLMesh.Vertex(axis.transform(new Vector3f((i + 0) * quadWidth, 0.0F, (j + 0) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
 
-                mesh.addFace(new Mesh.Face4(v0, v1, v2, v3));
+                mesh.addFace(new GLMesh.Face4(v0, v1, v2, v3));
             }
         }
 
         return mesh.compile();
     }
 
-    public static Mesh createTorus(float innerRadius, float outerRadius, float xDivisions, float yDivisions)
+    public static GLMesh createTorus(float innerRadius, float outerRadius, float xDivisions, float yDivisions)
     {
-        Mesh mesh = Mesh.create();
+        GLMesh mesh = GLMesh.create();
 
         return mesh;
     }
 
-    public static Mesh createCapsule(float radius, float distance, float xDivisions, float yDivisions)
+    public static GLMesh createCapsule(float radius, float distance, float xDivisions, float yDivisions)
     {
-        Mesh mesh = Mesh.create();
+        GLMesh mesh = GLMesh.create();
 
         return mesh;
     }
 
-    public static Mesh parseObj(String file) throws IOException
+    public static GLMesh parseObj(String file) throws IOException
     {
         WireEngine.getLogger().info("Loading OBJ filePath " + file);
         StringBuilder sb = new StringBuilder();
@@ -189,7 +193,7 @@ public class MeshHelper
             List<Vector3f> geometrics = new ArrayList<>();
             List<Vector3f> normals = new ArrayList<>();
             List<Vector2f> textures = new ArrayList<>();
-            List<Mesh.Face3> faces = new ArrayList<>();
+            List<GLMesh.Face3> faces = new ArrayList<>();
             List<Material> materials = new ArrayList<>();
             Material currentMaterial = null;
 
@@ -237,9 +241,9 @@ public class MeshHelper
 
                         if (i >= 1)
                         {
-                            Mesh.Vertex v1 = new Mesh.Vertex(geometrics.get(indices[0]), new Vector3f(), new Vector2f());
-                            Mesh.Vertex v2 = new Mesh.Vertex(geometrics.get(indices[1]), new Vector3f(), new Vector2f());
-                            Mesh.Vertex v3 = new Mesh.Vertex(geometrics.get(indices[2]), new Vector3f(), new Vector2f());
+                            GLMesh.Vertex v1 = new GLMesh.Vertex(geometrics.get(indices[0]), new Vector3f(), new Vector2f());
+                            GLMesh.Vertex v2 = new GLMesh.Vertex(geometrics.get(indices[1]), new Vector3f(), new Vector2f());
+                            GLMesh.Vertex v3 = new GLMesh.Vertex(geometrics.get(indices[2]), new Vector3f(), new Vector2f());
 
                             if (i >= 2)
                             {
@@ -259,7 +263,7 @@ public class MeshHelper
                                 }
                             }
 
-                            Mesh.Face3 face = new Mesh.Face3(v1, v2, v3);
+                            GLMesh.Face3 face = new GLMesh.Face3(v1, v2, v3);
 
                             if (currentMaterial != null)
                             {
@@ -302,8 +306,8 @@ public class MeshHelper
                 }
             }
 
-            Mesh mesh = Mesh.create();
-            mesh.addFaces(faces.toArray(new Mesh.Face3[faces.size()]));
+            GLMesh mesh = GLMesh.create();
+            mesh.addFaces(faces.toArray(new GLMesh.Face3[faces.size()]));
             WireEngine.getLogger().info("Successfully loaded and compiled OBJ file");
 
             return mesh.compile();
@@ -508,28 +512,28 @@ public class MeshHelper
         {
             str = str.toLowerCase();
 
-            if (StringUtils.stringCompare("true", str, 4) == 0)
+            if (Utils.stringCompare("true", str, 4) == 0)
             {
                 return true;
             }
-            if (StringUtils.stringCompare("yes", str, 3) == 0)
+            if (Utils.stringCompare("yes", str, 3) == 0)
             {
                 return true;
             }
-            if (StringUtils.stringCompare("on", str, 2) == 0)
+            if (Utils.stringCompare("on", str, 2) == 0)
             {
                 return true;
             }
 
-            if (StringUtils.stringCompare("false", str, 5) == 0)
+            if (Utils.stringCompare("false", str, 5) == 0)
             {
                 return false;
             }
-            if (StringUtils.stringCompare("no", str, 2) == 0)
+            if (Utils.stringCompare("no", str, 2) == 0)
             {
                 return false;
             }
-            if (StringUtils.stringCompare("off", str, 3) == 0)
+            if (Utils.stringCompare("off", str, 3) == 0)
             {
                 return false;
             }
@@ -542,14 +546,14 @@ public class MeshHelper
     {
         String[] data = line.split(" ");
 
-        return StringUtils.isFloat(data[0]) ? Float.parseFloat(data[0]) : defaultValue;
+        return Utils.isFloat(data[0]) ? Float.parseFloat(data[0]) : defaultValue;
     }
 
     private static Vector2f readVector2f(String line, Vector2f defaultValue)
     {
         String[] data = line.split(" ");
-        float x = StringUtils.isFloat(data[0]) ? Float.parseFloat(data[0]) : defaultValue.x;
-        float y = StringUtils.isFloat(data[1]) ? Float.parseFloat(data[1]) : defaultValue.y;
+        float x = Utils.isFloat(data[0]) ? Float.parseFloat(data[0]) : defaultValue.x;
+        float y = Utils.isFloat(data[1]) ? Float.parseFloat(data[1]) : defaultValue.y;
 
         return new Vector2f(x, y);
     }
@@ -557,9 +561,9 @@ public class MeshHelper
     private static Vector3f readVector3f(String line, Vector3f defaultValue)
     {
         String[] data = line.split(" ");
-        float x = StringUtils.isFloat(data[0]) ? Float.parseFloat(data[0]) : defaultValue.x;
-        float y = StringUtils.isFloat(data[1]) ? Float.parseFloat(data[1]) : defaultValue.y;
-        float z = StringUtils.isFloat(data[2]) ? Float.parseFloat(data[2]) : defaultValue.z;
+        float x = Utils.isFloat(data[0]) ? Float.parseFloat(data[0]) : defaultValue.x;
+        float y = Utils.isFloat(data[1]) ? Float.parseFloat(data[1]) : defaultValue.y;
+        float z = Utils.isFloat(data[2]) ? Float.parseFloat(data[2]) : defaultValue.z;
 
         return new Vector3f(x, y, z);
     }

@@ -16,7 +16,7 @@ public class PhysicsEngine extends TickableThread
 {
     public static final float GRAVITY = 0.0F;//9.807F;
 
-    private List<IPhysicsObject> tickable = new ArrayList<>();
+    private List<ITickable> tickList = new ArrayList<>();
 
     public PhysicsEngine()
     {
@@ -33,6 +33,11 @@ public class PhysicsEngine extends TickableThread
     public void init()
     {
         WireEngine.getLogger().info("Initializing physics engine");
+
+        for (ITickable object : this.tickList)
+        {
+            object.initTickable();
+        }
     }
 
     @Override
@@ -40,9 +45,13 @@ public class PhysicsEngine extends TickableThread
     {
         WireEngine.engine().getEventHandler().postEvent(this, new TickEvent.PhysicsTickEvent(Event.State.PRE, delta));
 
-        for (IPhysicsObject object : this.tickable)
+        for (ITickable object : this.tickList)
         {
-            object.applyAcceleration(new Vector3f(0.0f, -GRAVITY, 0.0F));
+            if (object.getPhysicsObject() != null)
+            {
+                object.getPhysicsObject().applyAcceleration(new Vector3f(0.0f, -GRAVITY, 0.0F));
+            }
+
             object.tick(delta);
         }
 
@@ -55,23 +64,23 @@ public class PhysicsEngine extends TickableThread
         WireEngine.getLogger().info("Cleaning up physics engine");
     }
 
-    public boolean addPhysicsObject(IPhysicsObject object)
+    public boolean addTickable(ITickable object)
     {
-        if (object == null || containsPhysicsObject(object))
+        if (object == null || containsTickable(object))
         {
             return false;
         }
 
-        return this.tickable.add(object);
+        return this.tickList.add(object);
     }
 
-    public boolean removePhysicsObject(IPhysicsObject object)
+    public boolean removeTickable(ITickable object)
     {
-        return this.tickable.remove(object);
+        return this.tickList.remove(object);
     }
 
-    public boolean containsPhysicsObject(IPhysicsObject object)
+    public boolean containsTickable(ITickable object)
     {
-        return this.tickable.contains(object);
+        return this.tickList.contains(object);
     }
 }

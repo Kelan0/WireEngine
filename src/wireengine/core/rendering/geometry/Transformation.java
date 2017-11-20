@@ -17,34 +17,60 @@ public class Transformation
 
     public Transformation(Vector3f translation, Quaternion rotation, Vector3f scale)
     {
-        this.rotation = rotation;
-        this.translation = translation;
-        this.scale = scale;
+        this.set(translation, rotation, scale);
     }
 
     public Transformation(Vector3f translation, Vector3f scale)
     {
-        this(translation, new Quaternion(), scale);
+        this.set(translation, scale);
     }
 
     public Transformation(Vector3f translation, Quaternion rotation)
     {
-        this(translation, rotation, new Vector3f(1.0F, 1.0F, 1.0F));
+        this.set(translation, rotation);
     }
 
     public Transformation(Vector3f translation)
     {
-        this(translation, new Quaternion(), new Vector3f(1.0F, 1.0F, 1.0F));
+        this.set(translation);
     }
 
     public Transformation(Transformation transformation)
     {
-        this(transformation.translation, transformation.rotation, transformation.scale);
+        this.set(transformation);
     }
 
     public Transformation()
     {
-        this(new Vector3f(), new Quaternion(), new Vector3f(1.0F, 1.0F, 1.0F));
+        this.set(new Vector3f(), new Quaternion(), new Vector3f(1.0F, 1.0F, 1.0F));
+    }
+
+    public Transformation set(Vector3f translation, Quaternion rotation, Vector3f scale)
+    {
+        this.rotation = rotation;
+        this.translation = translation;
+        this.scale = scale;
+        return this;
+    }
+
+    public Transformation set(Vector3f translation, Vector3f scale)
+    {
+        return this.set(translation, new Quaternion(), scale);
+    }
+
+    public Transformation set(Vector3f translation, Quaternion rotation)
+    {
+        return this.set(translation, rotation, new Vector3f(1.0F, 1.0F, 1.0F));
+    }
+
+    public Transformation set(Vector3f translation)
+    {
+        return this.set(translation, new Quaternion(), new Vector3f(1.0F, 1.0F, 1.0F));
+    }
+
+    public Transformation set(Transformation transformation)
+    {
+        return this.set(transformation.translation, transformation.rotation, transformation.scale);
     }
 
     public Vector3f getTranslation()

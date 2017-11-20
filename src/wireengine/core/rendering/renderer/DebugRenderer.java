@@ -5,7 +5,6 @@ import org.lwjgl.util.vector.*;
 import wireengine.core.rendering.ShaderProgram;
 import wireengine.core.rendering.geometry.Transformation;
 
-import java.nio.Buffer;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +14,7 @@ import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL30.glGenVertexArrays;
-import static wireengine.core.rendering.geometry.Mesh.*;
+import static wireengine.core.rendering.geometry.GLMesh.*;
 
 /**
  * @author Kelan

@@ -23,7 +23,7 @@ import static org.lwjgl.opengl.GL30.*;
 /**
  * @author Kelan
  */
-public class Mesh
+public class GLMesh
 {
     public static final int FLOAT_SIZE_BYTES = Float.BYTES;
     public static final int INT_SIZE_BYTES = Integer.BYTES;
@@ -56,6 +56,7 @@ public class Mesh
     public static final int ATTRIBUTE_LOCATION_TEXTURE = 2;
     public static final int ATTRIBUTE_LOCATION_COLOUR = 3;
 
+    public MeshData mesh;
     private int vao;
     private int vbo;
     private int ibo;
@@ -69,7 +70,7 @@ public class Mesh
     List<Face3> faceList;
 
 
-    private Mesh(float epsilon)
+    private GLMesh(float epsilon)
     {
         this.cumulativeVertex = new Vector3f();
         this.vertexList = new ArrayList<>();
@@ -80,50 +81,56 @@ public class Mesh
 
     public void draw(ShaderProgram shader)
     {
-        glBindVertexArray(vao);
-        glEnableVertexAttribArray(ATTRIBUTE_LOCATION_POSITION);
-        glEnableVertexAttribArray(ATTRIBUTE_LOCATION_NORMAL);
-        glEnableVertexAttribArray(ATTRIBUTE_LOCATION_TEXTURE);
-        glEnableVertexAttribArray(ATTRIBUTE_LOCATION_COLOUR);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-
-        for (Map.Entry<Material, List<Pair<Integer, Integer>>> entry : this.materialRenderMap.entrySet())
+        if (WireEngine.isRenderThread())
         {
-            Material material = entry.getKey();
+            glBindVertexArray(vao);
+            glEnableVertexAttribArray(ATTRIBUTE_LOCATION_POSITION);
+            glEnableVertexAttribArray(ATTRIBUTE_LOCATION_NORMAL);
+            glEnableVertexAttribArray(ATTRIBUTE_LOCATION_TEXTURE);
+            glEnableVertexAttribArray(ATTRIBUTE_LOCATION_COLOUR);
 
-            if (material != null)
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+
+            for (Map.Entry<Material, List<Pair<Integer, Integer>>> entry : this.materialRenderMap.entrySet())
             {
-                material.bind(shader);
-                List<Pair<Integer, Integer>> indexList = entry.getValue();
+                Material material = entry.getKey();
 
-                for (Pair<Integer, Integer> faces : indexList)
+                if (material != null)
                 {
-                    int start = faces.getKey();
-                    int end = faces.getValue();
-                    glDrawElements(GL_TRIANGLES, (end - start) + 1, GL_UNSIGNED_INT, INT_SIZE_BYTES * start);
+                    material.bind(shader);
+                    List<Pair<Integer, Integer>> indexList = entry.getValue();
+
+                    for (Pair<Integer, Integer> faces : indexList)
+                    {
+                        int start = faces.getKey();
+                        int end = faces.getValue();
+                        glDrawElements(GL_TRIANGLES, (end - start) + 1, GL_UNSIGNED_INT, INT_SIZE_BYTES * start);
+                    }
                 }
             }
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+            glDisableVertexAttribArray(ATTRIBUTE_LOCATION_POSITION);
+            glDisableVertexAttribArray(ATTRIBUTE_LOCATION_NORMAL);
+            glDisableVertexAttribArray(ATTRIBUTE_LOCATION_TEXTURE);
+            glDisableVertexAttribArray(ATTRIBUTE_LOCATION_COLOUR);
+            glBindVertexArray(0);
         }
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        glDisableVertexAttribArray(ATTRIBUTE_LOCATION_POSITION);
-        glDisableVertexAttribArray(ATTRIBUTE_LOCATION_NORMAL);
-        glDisableVertexAttribArray(ATTRIBUTE_LOCATION_TEXTURE);
-        glDisableVertexAttribArray(ATTRIBUTE_LOCATION_COLOUR);
-        glBindVertexArray(0);
     }
 
     public void cleanup()
     {
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
+        if (WireEngine.isRenderThread())
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+            glBindVertexArray(0);
 
-        glDeleteBuffers(vbo);
-        glDeleteBuffers(ibo);
-        glDeleteVertexArrays(vao);
+            glDeleteBuffers(vbo);
+            glDeleteBuffers(ibo);
+            glDeleteVertexArrays(vao);
+        }
     }
 
     public int getNumVertices()
@@ -134,6 +141,11 @@ public class Mesh
     public int getNumIndices()
     {
         return indexList.size();
+    }
+
+    public int getNumFaces()
+    {
+        return faceList.size();
     }
 
     public int getVao()
@@ -151,7 +163,7 @@ public class Mesh
         return ibo;
     }
 
-    public List<Face3> getFaceList(Material material)
+    public List<Face3> getFaces(Material material)
     {
         if (material != null)
         {
@@ -179,38 +191,70 @@ public class Mesh
         return this.vertexList;
     }
 
-    public List<Face3> getFaceList()
+    public List<Vector3f> getGeometrics()
+    {
+        List<Vector3f> list = new ArrayList<>();
+
+        for (Vertex v : this.getVertices())
+        {
+            list.add(v.getPosition());
+        }
+
+        return list;
+    }
+
+    public List<Vector3f> getNormals()
+    {
+        List<Vector3f> list = new ArrayList<>();
+
+        for (Vertex v : this.getVertices())
+        {
+            list.add(v.getNormal());
+        }
+
+        return list;
+    }
+
+    public List<Vector2f> getTextures()
+    {
+        List<Vector2f> list = new ArrayList<>();
+
+        for (Vertex v : this.getVertices())
+        {
+            list.add(v.getTexture());
+        }
+
+        return list;
+    }
+
+    public List<Vector4f> getColours()
+    {
+        List<Vector4f> list = new ArrayList<>();
+
+        for (Vertex v : this.getVertices())
+        {
+            list.add(v.getColour());
+        }
+
+        return list;
+    }
+
+    public List<Integer> getIndices()
+    {
+        return indexList;
+    }
+
+    public List<Face3> getFaces()
     {
         return this.faceList;
     }
 
-    public Vertex getFurthestVertex(Vector3f direction)
-    {
-        // Time complexity of this function is O(n), not the best but it will do for now.
-        float max = Float.NEGATIVE_INFINITY;
-        Vertex vertex = null;
-
-        for (int i = 0; i < getNumVertices(); i++)
-        {
-            Vertex v = vertexList.get(i);
-            float f = Vector3f.dot(v.getPosition(), direction);
-
-            if (f > max)
-            {
-                max = f;
-                vertex = v;
-            }
-        }
-
-        return vertex;
-    }
-
-    public Mesh transform(Transformation transformation)
+    public GLMesh transform(Transformation transformation)
     {
         return transform(transformation.getMatrix(null));
     }
 
-    public Mesh transform(Matrix4f matrix)
+    public GLMesh transform(Matrix4f matrix)
     {
         if (matrix != null)
         {
@@ -230,7 +274,7 @@ public class Mesh
         return this;
     }
 
-    public Mesh recentre()
+    public GLMesh recentre()
     {
         Vector3f centre = getCentre();
 
@@ -247,9 +291,8 @@ public class Mesh
         return this;
     }
 
-    public Mesh subdivideFaces(int divisions)
+    public GLMesh subdivideFaces(int divisions)
     {
-        System.out.println("Dividing faces.");
         for (int i = 0; i < divisions; i++)
         {
             int numIndices = getNumIndices();
@@ -280,7 +323,7 @@ public class Mesh
         return this.compile();
     }
 
-    public Mesh addFaces(Face[] faces)
+    public GLMesh addFaces(Face[] faces)
     {
         for (Face face : faces)
         {
@@ -290,7 +333,7 @@ public class Mesh
         return this;
     }
 
-    public Mesh addMesh(Mesh mesh)
+    public GLMesh addMesh(GLMesh mesh)
     {
         for (Integer index : mesh.indexList)
         {
@@ -300,7 +343,7 @@ public class Mesh
         return this;
     }
 
-    public Mesh addFace(Face face, boolean addMaterial)
+    public GLMesh addFace(Face face, boolean addMaterial)
     {
         if (face != null)
         {
@@ -318,7 +361,7 @@ public class Mesh
 
                 if (addMaterial && face.getMaterial() != null)
                 {
-                    getFaceList(face.getMaterial()).add((Face3) face);
+                    getFaces(face.getMaterial()).add((Face3) face);
                 }
             }
         }
@@ -326,12 +369,12 @@ public class Mesh
         return this;
     }
 
-    public Mesh addFace(Face face)
+    public GLMesh addFace(Face face)
     {
         return addFace(face, true);
     }
 
-    public Mesh addVertices(Vertex[] vertices)
+    public GLMesh addVertices(Vertex[] vertices)
     {
         for (Vertex vertex : vertices)
         {
@@ -341,12 +384,12 @@ public class Mesh
         return this;
     }
 
-    public Mesh addVertex(Vertex vertex)
+    public GLMesh addVertex(Vertex vertex)
     {
         return addVertex(vertex, true);
     }
 
-    public Mesh addVertex(Vertex vertex, boolean findExisting)
+    public GLMesh addVertex(Vertex vertex, boolean findExisting)
     {
         if (vertex != null)
         {
@@ -386,7 +429,7 @@ public class Mesh
         return this;
     }
 
-    public Mesh setupFaces()
+    public GLMesh setupFaces()
     {
         //Sort all of the vertices so that all faceList using a material are together in the indices.
         this.vertexList.clear();
@@ -419,39 +462,41 @@ public class Mesh
         return this;
     }
 
-    public Mesh compile()
+    public GLMesh compile()
     {
         this.setupFaces();
-        System.out.println("Compiled mesh with " + this.faceList.size() + " faces and " + this.vertexList.size() + " vertices");
 
-        float[] vertices = new float[vertexList.size() * VERTEX_SIZE_FLOATS];
-        int[] indices = new int[indexList.size()];
-
-        int counter = 0;
-        for (int i = 0; i < vertexList.size(); i++)
+        if (WireEngine.isRenderThread()) //Avoid GL ACCESS VIOLATION if this is called from a non-GL thread.
         {
-            Vertex vertex = vertexList.get(i);
-            float[] vertexData = vertex.getData();
-            for (int j = 0; j < VERTEX_SIZE_FLOATS; j++)
+            float[] vertices = new float[vertexList.size() * VERTEX_SIZE_FLOATS];
+            int[] indices = new int[indexList.size()];
+
+            int counter = 0;
+            for (int i = 0; i < vertexList.size(); i++)
             {
-                vertices[counter++] = vertexData[j];
+                Vertex vertex = vertexList.get(i);
+                float[] vertexData = vertex.getData();
+                for (int j = 0; j < VERTEX_SIZE_FLOATS; j++)
+                {
+                    vertices[counter++] = vertexData[j];
+                }
             }
+
+            for (int i = 0; i < indexList.size(); i++)
+            {
+                indices[i] = indexList.get(i);
+            }
+
+            FloatBuffer vertexData = (FloatBuffer) BufferUtils.createFloatBuffer(vertices.length).put(vertices).flip();
+            IntBuffer indexData = (IntBuffer) BufferUtils.createIntBuffer(indices.length).put(indices).flip();
+
+            glBindVertexArray(this.vao);
+
+            upload(vertexData, GL_ARRAY_BUFFER, vbo, FLOAT_SIZE_BYTES, 0, 0);
+            upload(indexData, GL_ELEMENT_ARRAY_BUFFER, ibo, INT_SIZE_BYTES, 0, 0);
+
+            glBindVertexArray(0);
         }
-
-        for (int i = 0; i < indexList.size(); i++)
-        {
-            indices[i] = indexList.get(i);
-        }
-
-        FloatBuffer vertexData = (FloatBuffer) BufferUtils.createFloatBuffer(vertices.length).put(vertices).flip();
-        IntBuffer indexData = (IntBuffer) BufferUtils.createIntBuffer(indices.length).put(indices).flip();
-
-        glBindVertexArray(this.vao);
-
-        upload(vertexData, GL_ARRAY_BUFFER, vbo, FLOAT_SIZE_BYTES, 0, 0);
-        upload(indexData, GL_ELEMENT_ARRAY_BUFFER, ibo, INT_SIZE_BYTES, 0, 0);
-
-        glBindVertexArray(0);
 
         return this;
     }
@@ -479,33 +524,34 @@ public class Mesh
         glBindBuffer(bufferTarget, 0);
     }
 
-    public static Mesh create(float epsilon)
+    public static GLMesh create(float epsilon)
     {
-        Mesh mesh = new Mesh(epsilon);
+        GLMesh mesh = new GLMesh(epsilon);
 
-        mesh.vao = glGenVertexArrays();
-        mesh.vbo = glGenBuffers();
-        mesh.ibo = glGenBuffers();
+        if (WireEngine.isRenderThread())
+        {
+            mesh.vao = glGenVertexArrays();
+            mesh.vbo = glGenBuffers();
+            mesh.ibo = glGenBuffers();
 
-        glBindVertexArray(mesh.vao);
+            glBindVertexArray(mesh.vao);
 
+            glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+            glVertexAttribPointer(ATTRIBUTE_LOCATION_POSITION, FLOATS_PER_POSITION, GL_FLOAT, false, POSITION_STRIDE_BYTES, POSITION_OFFSET_BYTES);
+            glVertexAttribPointer(ATTRIBUTE_LOCATION_NORMAL, FLOATS_PER_NORMAL, GL_FLOAT, false, NORMAL_STRIDE_BYTES, NORMAL_OFFSET_BYTES);
+            glVertexAttribPointer(ATTRIBUTE_LOCATION_TEXTURE, FLOATS_PER_TEXTURE, GL_FLOAT, false, TEXTURE_STRIDE_BYTES, TEXTURE_OFFSET_BYTES);
+            glVertexAttribPointer(ATTRIBUTE_LOCATION_COLOUR, FLOATS_PER_COLOUR, GL_FLOAT, false, COLOUR_STRIDE_BYTES, COLOUR_OFFSET_BYTES);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-        glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
-        glVertexAttribPointer(ATTRIBUTE_LOCATION_POSITION, FLOATS_PER_POSITION, GL_FLOAT, false, POSITION_STRIDE_BYTES, POSITION_OFFSET_BYTES);
-        glVertexAttribPointer(ATTRIBUTE_LOCATION_NORMAL, FLOATS_PER_NORMAL, GL_FLOAT, false, NORMAL_STRIDE_BYTES, NORMAL_OFFSET_BYTES);
-        glVertexAttribPointer(ATTRIBUTE_LOCATION_TEXTURE, FLOATS_PER_TEXTURE, GL_FLOAT, false, TEXTURE_STRIDE_BYTES, TEXTURE_OFFSET_BYTES);
-        glVertexAttribPointer(ATTRIBUTE_LOCATION_COLOUR, FLOATS_PER_COLOUR, GL_FLOAT, false, COLOUR_STRIDE_BYTES, COLOUR_OFFSET_BYTES);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        mesh.upload(null, GL_ARRAY_BUFFER, mesh.vbo, FLOAT_SIZE_BYTES, 2000, 0);
-        mesh.upload(null, GL_ELEMENT_ARRAY_BUFFER, mesh.ibo, INT_SIZE_BYTES, 2000, 0);
-        glBindVertexArray(0);
+            mesh.upload(null, GL_ARRAY_BUFFER, mesh.vbo, FLOAT_SIZE_BYTES, 2000, 0);
+            mesh.upload(null, GL_ELEMENT_ARRAY_BUFFER, mesh.ibo, INT_SIZE_BYTES, 2000, 0);
+            glBindVertexArray(0);
+        }
 
         return mesh;
     }
 
-    public static Mesh create()
+    public static GLMesh create()
     {
         return create(0.0001F);
     }
@@ -746,6 +792,10 @@ public class Mesh
 
         public void set(Vertex v1, Vertex v2, Vertex v3)
         {
+            if (v1 == null || v2 == null || v3 == null)
+            {
+                throw new IllegalArgumentException("Cannot construct triangle with a null vertex");
+            }
             this.vertices[0] = v1;
             this.vertices[1] = v2;
             this.vertices[2] = v3;
@@ -811,7 +861,17 @@ public class Mesh
             Vector3f b = Vector3f.add(getV2().position, translate, null);
             Vector3f c = Vector3f.add(getV3().position, translate, null);
 
-            return new Triangle(a, b, c);
+            Vector3f e1 = Vector3f.sub(a, b, null);
+            Vector3f e2 = Vector3f.sub(b, c, null);
+            Vector3f e3 = Vector3f.sub(c, a, null);
+
+            if (e1.lengthSquared() == 0.0F || e2.lengthSquared() == 0.0F || e3.lengthSquared() == 0.0F)
+            {
+                return null;
+            } else
+            {
+                return new Triangle(a, b, c);
+            }
         }
 
         public Vertex[] getSharedVertices(Face3 other, float epsilon)

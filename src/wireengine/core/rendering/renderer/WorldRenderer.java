@@ -1,12 +1,13 @@
 package wireengine.core.rendering.renderer;
 
 import org.lwjgl.util.vector.Matrix4f;
-import wireengine.core.WireEngine;
+import wireengine.core.rendering.IRenderable;
 import wireengine.core.rendering.ShaderProgram;
-import wireengine.core.rendering.geometry.Mesh;
-import wireengine.testgame.Game;
+import wireengine.core.rendering.geometry.GLMesh;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.GL_FRAGMENT_SHADER;
@@ -20,6 +21,7 @@ public class WorldRenderer extends Renderer3D
     private ShaderProgram worldShader;
     private int polygonMode = GL_FILL;
     private boolean orthographicProjection = false;
+    private List<IRenderable> renderList = new ArrayList<>();
 
     public WorldRenderer(int width, int height, float fov)
     {
@@ -34,14 +36,18 @@ public class WorldRenderer extends Renderer3D
         {
             worldShader.addShader(GL_VERTEX_SHADER, "res/shaders/vertex.glsl");
             worldShader.addShader(GL_FRAGMENT_SHADER, "res/shaders/fragment.glsl");
-            worldShader.addAttribute(Mesh.ATTRIBUTE_LOCATION_POSITION, "vertexPosition");
-            worldShader.addAttribute(Mesh.ATTRIBUTE_LOCATION_NORMAL, "vertexNormal");
-            worldShader.addAttribute(Mesh.ATTRIBUTE_LOCATION_TEXTURE, "vertexTexture");
-            worldShader.addAttribute(Mesh.ATTRIBUTE_LOCATION_COLOUR, "vertexColour");
+            worldShader.addAttribute(GLMesh.ATTRIBUTE_LOCATION_POSITION, "vertexPosition");
+            worldShader.addAttribute(GLMesh.ATTRIBUTE_LOCATION_NORMAL, "vertexNormal");
+            worldShader.addAttribute(GLMesh.ATTRIBUTE_LOCATION_TEXTURE, "vertexTexture");
+            worldShader.addAttribute(GLMesh.ATTRIBUTE_LOCATION_COLOUR, "vertexColour");
 
             worldShader.createProgram();
 
-            WireEngine.engine().getGame().getLevel().init();
+            for (IRenderable renderable : this.renderList)
+            {
+                renderable.initRenderable();
+            }
+
         } catch (IOException e)
         {
             e.printStackTrace();
@@ -57,11 +63,9 @@ public class WorldRenderer extends Renderer3D
         worldShader.useProgram(true);
         worldShader.setUniformMatrix4f("projectionMatrix", projectionMatrix);
 
-        Game game = WireEngine.engine().getGame();
-        game.getPlayer().render(delta, worldShader);
-        if (game.getLevel() != null)
+        for (IRenderable renderable : this.renderList)
         {
-            game.getLevel().render(worldShader, delta, time);
+            renderable.render(delta, worldShader);
         }
 
         worldShader.useProgram(false);
@@ -71,6 +75,16 @@ public class WorldRenderer extends Renderer3D
     public void cleanup()
     {
 
+    }
+
+    public boolean addRenderable(IRenderable renderable)
+    {
+        if (renderable == null || this.renderList.contains(renderable))
+        {
+            return false;
+        }
+
+        return this.renderList.add(renderable);
     }
 
     public ShaderProgram getShader()

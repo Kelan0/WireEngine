@@ -2,7 +2,6 @@ package wireengine.core.physics.collision;
 
 import org.lwjgl.util.vector.Vector3f;
 import wireengine.core.physics.collision.colliders.Triangle;
-import wireengine.core.rendering.geometry.Mesh;
 import wireengine.core.rendering.geometry.Transformation;
 import wireengine.core.util.Constants;
 import wireengine.core.util.MathUtils;
@@ -21,7 +20,7 @@ public class Colliders
      * An icosphere is used for this, due to the fact that all of the triangles have the most
      * even distribution out of the other algorithms for creating a sphere.
      */
-    public static Triangle[] getEllipsoid(int numDivisions, Vector3f radius)
+    public static Collider getEllipsoid(int numDivisions, Vector3f radius)
     {
         radius = MathUtils.abs(radius);
         List<PreTriangle> temp = new ArrayList<>();
@@ -70,7 +69,7 @@ public class Colliders
             triangles.add(new Triangle(triangle.v0, triangle.v1, triangle.v2));
         }
 
-        return triangles.toArray(new Triangle[temp.size()]);
+        return new Collider(triangles, new Transformation());
     }
 
     public static PreTriangle[] divideTriangle(Triangle triangle)

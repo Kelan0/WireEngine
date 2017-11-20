@@ -27,6 +27,16 @@ public class Triangle
         this(p1, p2, p3, new Vector3f());
     }
 
+    public Triangle(Triangle triangle)
+    {
+        this.p1 = new Vector3f(triangle.p1);
+        this.p2 = new Vector3f(triangle.p2);
+        this.p3 = new Vector3f(triangle.p3);
+
+        this.position = new Vector3f(triangle.position);
+        this.normal = new Vector3f(triangle.normal);
+    }
+
     public void set(Vector3f p1, Vector3f p2, Vector3f p3)
     {
         if (p1 == null || p2 == null || p3 == null)
@@ -46,7 +56,7 @@ public class Triangle
 
         if (e1.lengthSquared() == 0.0F || e2.lengthSquared() == 0.0F || e3.lengthSquared() == 0.0F)
         {
-            throw new IllegalArgumentException("Cannot construct triangle from zero-length sides.");
+            throw new IllegalArgumentException("Cannot construct triangle from zero-length sides. {" + p1 + ", " + p2 + ", " + p3 + "}");
         }
 
         this.normal = Vector3f.cross(e1, e2, null).normalise(null);

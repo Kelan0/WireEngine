@@ -1,39 +1,49 @@
 package wireengine.core.rendering.geometry;
 
 import org.lwjgl.util.vector.Matrix4f;
-import org.lwjgl.util.vector.Vector3f;
+import wireengine.core.rendering.IRenderable;
 import wireengine.core.rendering.ShaderProgram;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL11.GL_BACK;
 
 /**
  * @author Kelan
  */
-public class Model
+public class Model implements IRenderable
 {
-    private Mesh mesh;
+    private MeshBuilder meshBuilder;
+    private GLMesh mesh;
     private Transformation transformation;
 
-    public Model(Mesh mesh, Transformation transformation)
+    public Model(GLMesh mesh, Transformation transformation)
     {
         this.mesh = mesh;
 
-        if (transformation != null)
+        if (transformation == null)
         {
-            this.transformation = transformation;
-        } else
-        {
-            this.transformation = new Transformation();
+            transformation = new Transformation();
         }
+
+        this.transformation = transformation;
     }
 
-    public Model(Mesh mesh)
+    public Model(MeshBuilder meshBuilder, Transformation transformation)
+    {
+        this((GLMesh) null, transformation);
+        this.meshBuilder = meshBuilder;
+    }
+
+    public Model(GLMesh mesh)
     {
         this(mesh, new Transformation());
     }
 
-    public Mesh getMesh()
+    public Model(MeshBuilder meshBuilder)
+    {
+        this(meshBuilder, new Transformation());
+    }
+
+    public GLMesh getMesh()
     {
         return mesh;
     }
@@ -53,14 +63,24 @@ public class Model
         return this;
     }
 
-    public void render(ShaderProgram shader)
+    @Override
+    public void initRenderable()
+    {
+        if (this.mesh == null && this.meshBuilder != null)
+        {
+            this.mesh = this.meshBuilder.build();
+        }
+    }
+
+    @Override
+    public void render(double delta, ShaderProgram shaderProgram)
     {
         Matrix4f mat = this.transformation.getMatrix(new Matrix4f());
-        shader.setUniformMatrix4f("modelMatrix", mat);
+        shaderProgram.setUniformMatrix4f("modelMatrix", mat);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        this.mesh.draw(shader);
+        glCullFace(GL_FRONT);
+        this.mesh.draw(shaderProgram);
     }
 
     @Override

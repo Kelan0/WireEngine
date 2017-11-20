@@ -1,13 +1,17 @@
 package wireengine.core.util;
 
+import org.lwjgl.util.vector.Vector3f;
+
 import java.io.File;
+import java.util.List;
+import java.util.Vector;
 
 /**
  * Implementation of some string functions available in C and C++
  *
  * @author Kelan
  */
-public class StringUtils
+public class Utils
 {
     /**
      * Finds the index of the first different character in the two strings.
@@ -103,5 +107,41 @@ public class StringUtils
             }
         }
         return "";
+    }
+
+    /**
+     * Checks if the specified list contains a Vector3f that is within a specified distance of the specified vector.
+     * @param list The list to check.
+     * @param vector The vector to find.
+     * @param epsilon The maximum distance to find the vector in.
+     * @return The index of the first vector contained in the list that was closer than {@code epsilon} to {@code vector}, -1 if none exists.
+     */
+    public static <T extends Vector3f> int getCloseIndex(List<T> list, Vector3f vector, float epsilon)
+    {
+        if (list == null || vector == null || Float.isNaN(epsilon) || Float.isInfinite(epsilon))
+        {
+            return -1;
+        } else
+        {
+            epsilon = Math.abs(epsilon);
+
+            if (epsilon <= 0.0F)
+            {
+                return list.indexOf(vector);
+            } else
+            {
+                for (int i = 0; i < list.size(); i++)
+                {
+                    Vector3f v = list.get(i);
+
+                    if (v != null && Vector3f.sub(v, vector, null).lengthSquared() <= epsilon * epsilon)
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+        }
     }
 }
