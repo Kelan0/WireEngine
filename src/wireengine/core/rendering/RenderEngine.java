@@ -2,11 +2,10 @@ package wireengine.core.rendering;
 
 import wireengine.core.TickableThread;
 import wireengine.core.WireEngine;
-import wireengine.core.entity.Entity;
 import wireengine.core.event.Event;
 import wireengine.core.event.events.TickEvent;
+import wireengine.core.rendering.renderer.AbstractRenderer;
 import wireengine.core.rendering.renderer.DebugRenderer;
-import wireengine.core.rendering.renderer.Renderer;
 import wireengine.core.window.Window;
 
 import java.util.ArrayList;
@@ -19,7 +18,7 @@ import java.util.List;
 public class RenderEngine extends TickableThread
 {
     private Window window;
-    private List<Renderer> renderers;
+    private List<AbstractRenderer> renderers;
 
     public RenderEngine()
     {
@@ -40,7 +39,7 @@ public class RenderEngine extends TickableThread
         WireEngine.getLogger().info("Initializing rendering");
         this.window.init();
 
-        for (Renderer renderer : this.renderers)
+        for (AbstractRenderer renderer : this.renderers)
         {
             renderer.init();
         }
@@ -56,7 +55,7 @@ public class RenderEngine extends TickableThread
         if (!window.shouldClose())
         {
             WireEngine.engine().getEventHandler().postEvent(this, new TickEvent.RenderTickEvent(Event.State.PRE, delta));
-            for (Renderer renderer : this.renderers)
+            for (AbstractRenderer renderer : this.renderers)
             {
                 renderer.render(delta, this.getTimeSeconds());
             }
@@ -73,13 +72,13 @@ public class RenderEngine extends TickableThread
         WireEngine.getLogger().info("Cleaning up rendering");
         this.window.cleanup();
 
-        for (Renderer renderer : this.renderers)
+        for (AbstractRenderer renderer : this.renderers)
         {
             renderer.cleanup();
         }
     }
 
-    public void addRenderer(Renderer renderer)
+    public void addRenderer(AbstractRenderer renderer)
     {
         if (this.getThreadState() != ThreadState.RUN)
         {
@@ -96,7 +95,7 @@ public class RenderEngine extends TickableThread
         return window;
     }
 
-//    public Renderer removeRenderer(Renderer rendering)
+//    public AbstractRenderer removeRenderer(AbstractRenderer rendering)
 //    {
 //        int index = this.renderers.indexOf(rendering);
 //

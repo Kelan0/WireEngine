@@ -4,13 +4,18 @@ import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
+import wireengine.core.physics.collision.PreTriangle;
+import wireengine.core.physics.collision.colliders.Triangle;
 import wireengine.core.rendering.Axis;
+import wireengine.core.util.Constants;
 import wireengine.core.util.FileUtils;
+import wireengine.core.util.MathUtils;
 import wireengine.core.util.Utils;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -44,7 +49,7 @@ public class MeshHelper
     public static final String MTL_TEXTURE_TURBULENCE = "-t ";
     public static final String MTL_TEXTURE_RESOLUTION = "-texres ";
 
-    public static GLMesh createCuboid(Vector3f size)
+    public static MeshData createCuboid(Vector3f size)
     {
         if (size == null)
         {
@@ -54,31 +59,31 @@ public class MeshHelper
             size.scale(0.5F);
         }
 
-        GLMesh.Vertex v0 = new GLMesh.Vertex(new Vector3f(-size.x, -size.y, -size.z), new Vector3f(), new Vector2f());
-        GLMesh.Vertex v1 = new GLMesh.Vertex(new Vector3f(-size.x, -size.y, +size.z), new Vector3f(), new Vector2f());
-        GLMesh.Vertex v2 = new GLMesh.Vertex(new Vector3f(-size.x, +size.y, +size.z), new Vector3f(), new Vector2f());
-        GLMesh.Vertex v3 = new GLMesh.Vertex(new Vector3f(-size.x, +size.y, -size.z), new Vector3f(), new Vector2f());
-        GLMesh.Vertex v4 = new GLMesh.Vertex(new Vector3f(+size.x, -size.y, -size.z), new Vector3f(), new Vector2f());
-        GLMesh.Vertex v5 = new GLMesh.Vertex(new Vector3f(+size.x, -size.y, +size.z), new Vector3f(), new Vector2f());
-        GLMesh.Vertex v6 = new GLMesh.Vertex(new Vector3f(+size.x, +size.y, +size.z), new Vector3f(), new Vector2f());
-        GLMesh.Vertex v7 = new GLMesh.Vertex(new Vector3f(+size.x, +size.y, -size.z), new Vector3f(), new Vector2f());
+        MeshData.Vertex v0 = new MeshData.Vertex(new Vector3f(-size.x, -size.y, -size.z), new Vector3f(), new Vector2f());
+        MeshData.Vertex v1 = new MeshData.Vertex(new Vector3f(-size.x, -size.y, +size.z), new Vector3f(), new Vector2f());
+        MeshData.Vertex v2 = new MeshData.Vertex(new Vector3f(-size.x, +size.y, +size.z), new Vector3f(), new Vector2f());
+        MeshData.Vertex v3 = new MeshData.Vertex(new Vector3f(-size.x, +size.y, -size.z), new Vector3f(), new Vector2f());
+        MeshData.Vertex v4 = new MeshData.Vertex(new Vector3f(+size.x, -size.y, -size.z), new Vector3f(), new Vector2f());
+        MeshData.Vertex v5 = new MeshData.Vertex(new Vector3f(+size.x, -size.y, +size.z), new Vector3f(), new Vector2f());
+        MeshData.Vertex v6 = new MeshData.Vertex(new Vector3f(+size.x, +size.y, +size.z), new Vector3f(), new Vector2f());
+        MeshData.Vertex v7 = new MeshData.Vertex(new Vector3f(+size.x, +size.y, -size.z), new Vector3f(), new Vector2f());
 
-        GLMesh.Face4 fNegX = new GLMesh.Face4(v1, v2, v3, v0);
-        GLMesh.Face4 fPosX = new GLMesh.Face4(v5, v4, v7, v6);
-        GLMesh.Face4 fNegY = new GLMesh.Face4(v0, v4, v5, v1);
-        GLMesh.Face4 fPosY = new GLMesh.Face4(v2, v6, v7, v3);
-        GLMesh.Face4 fNegZ = new GLMesh.Face4(v7, v4, v0, v3);
-        GLMesh.Face4 fPosZ = new GLMesh.Face4(v1, v5, v6, v2);
+        MeshData.Face4 fNegX = new MeshData.Face4(v1, v2, v3, v0);
+        MeshData.Face4 fPosX = new MeshData.Face4(v5, v4, v7, v6);
+        MeshData.Face4 fNegY = new MeshData.Face4(v0, v4, v5, v1);
+        MeshData.Face4 fPosY = new MeshData.Face4(v2, v6, v7, v3);
+        MeshData.Face4 fNegZ = new MeshData.Face4(v7, v4, v0, v3);
+        MeshData.Face4 fPosZ = new MeshData.Face4(v1, v5, v6, v2);
 
-        return GLMesh.create().addFace(fNegX).addFace(fNegY).addFace(fNegZ).addFace(fPosX).addFace(fPosY).addFace(fPosZ).compile();
+        return new MeshData().addFace(fNegX).addFace(fNegY).addFace(fNegZ).addFace(fPosX).addFace(fPosY).addFace(fPosZ).compile();
     }
 
-    public static GLMesh createUVSphere(float radius, int xDivisions, int yDivisions)
+    public static MeshData createUVSphere(float radius, int xDivisions, int yDivisions)
     {
         final float S = 1.0F / (xDivisions - 1.0F);
         final float R = 1.0F / (yDivisions - 1.0F);
 
-        List<GLMesh.Vertex> vertices = new ArrayList<>();
+        List<MeshData.Vertex> vertices = new ArrayList<>();
 
         int pointer = 0;
         for (int i = 0; i < yDivisions; i++)
@@ -93,7 +98,7 @@ public class MeshHelper
                 Vector3f n = new Vector3f(x, y, z);
                 Vector2f t = new Vector2f(j * S, i * R);
 
-                vertices.add(new GLMesh.Vertex(p, n, t));
+                vertices.add(new MeshData.Vertex(p, n, t));
             }
         }
 
@@ -111,32 +116,32 @@ public class MeshHelper
             }
         }
 
-        GLMesh mesh = GLMesh.create();
+        MeshData mesh = new MeshData();
 
         for (pointer = 0; pointer < indices.length; )
         {
-            GLMesh.Vertex v1 = vertices.get(indices[pointer++]);
-            GLMesh.Vertex v2 = vertices.get(indices[pointer++]);
-            GLMesh.Vertex v3 = vertices.get(indices[pointer++]);
-            GLMesh.Vertex v4 = vertices.get(indices[pointer++]);
+            MeshData.Vertex v1 = vertices.get(indices[pointer++]);
+            MeshData.Vertex v2 = vertices.get(indices[pointer++]);
+            MeshData.Vertex v3 = vertices.get(indices[pointer++]);
+            MeshData.Vertex v4 = vertices.get(indices[pointer++]);
 
-            GLMesh.Face4 face = new GLMesh.Face4(v1, v2, v3, v4);
+            MeshData.Face4 face = new MeshData.Face4(v1, v2, v3, v4);
             mesh.addFace(face);
         }
 
         return mesh.compile();
     }
 
-    public static GLMesh createCubeSphere(float radius, int divisions)
+    public static MeshData createCubeSphere(float radius, int divisions)
     {
-        GLMesh mesh = createCuboid(null);
+        MeshData mesh = createCuboid(null);
 
         for (int i = 0; i < divisions; i++)
         {
             mesh.subdivideFaces(0);
         }
 
-        for (GLMesh.Vertex vertex : mesh.vertexList)
+        for (MeshData.Vertex vertex : mesh.vertexList)
         {
             vertex.position.normalise(vertex.position).scale(radius);
         }
@@ -144,9 +149,54 @@ public class MeshHelper
         return mesh.compile();
     }
 
-    public static GLMesh createPlane(float xSize, float ySize, int xDivisions, int yDivisions, Axis axis)
+    public static MeshData createIcosphere(int divisions, float radius)
     {
-        GLMesh mesh = GLMesh.create();
+        MeshData meshData = new MeshData();
+
+        radius = Math.abs(radius);
+
+        float t = (float) ((1.0F + Constants.SQRT_FIVE) * 0.5F);
+
+        MeshData.Vertex v0 = new MeshData.Vertex(new Vector3f(-1.0F, +t, 0.0F), new Vector3f());
+        MeshData.Vertex v1 = new MeshData.Vertex(new Vector3f(+1.0F, +t, 0.0F), new Vector3f());
+        MeshData.Vertex v2 = new MeshData.Vertex(new Vector3f(0.0F, +1.0F, +t), new Vector3f());
+        MeshData.Vertex v3 = new MeshData.Vertex(new Vector3f(-t, 0.0F, +1.0F), new Vector3f());
+        MeshData.Vertex v4 = new MeshData.Vertex(new Vector3f(-t, 0.0F, -1.0F), new Vector3f());
+        MeshData.Vertex v5 = new MeshData.Vertex(new Vector3f(0.0F, +1.0F, -t), new Vector3f());
+        MeshData.Vertex v6 = new MeshData.Vertex(new Vector3f(+1.0F, -t, 0.0F), new Vector3f());
+        MeshData.Vertex v7 = new MeshData.Vertex(new Vector3f(0.0F, -1.0F, +t), new Vector3f());
+        MeshData.Vertex v8 = new MeshData.Vertex(new Vector3f(-1.0F, -t, 0.0F), new Vector3f());
+        MeshData.Vertex v9 = new MeshData.Vertex(new Vector3f(0.0F, -1.0F, -t), new Vector3f());
+        MeshData.Vertex v10 = new MeshData.Vertex(new Vector3f(+t, 0.0F, -1.0F), new Vector3f());
+        MeshData.Vertex v11 = new MeshData.Vertex(new Vector3f(+t, 0.0F, +1.0F), new Vector3f());
+
+        meshData.addFace(new MeshData.Face3(v0, v3, v2));
+        meshData.addFace(new MeshData.Face3(v0, v2, v1));
+        meshData.addFace(new MeshData.Face3(v0, v1, v5));
+        meshData.addFace(new MeshData.Face3(v0, v5, v4));
+        meshData.addFace(new MeshData.Face3(v0, v4, v3));
+        meshData.addFace(new MeshData.Face3(v1, v2, v11));
+        meshData.addFace(new MeshData.Face3(v2, v3, v7));
+        meshData.addFace(new MeshData.Face3(v3, v4, v8));
+        meshData.addFace(new MeshData.Face3(v4, v5, v9));
+        meshData.addFace(new MeshData.Face3(v5, v1, v10));
+        meshData.addFace(new MeshData.Face3(v6, v11, v7));
+        meshData.addFace(new MeshData.Face3(v6, v7, v8));
+        meshData.addFace(new MeshData.Face3(v6, v8, v9));
+        meshData.addFace(new MeshData.Face3(v6, v9, v10));
+        meshData.addFace(new MeshData.Face3(v6, v10, v11));
+        meshData.addFace(new MeshData.Face3(v7, v11, v2));
+        meshData.addFace(new MeshData.Face3(v8, v7, v3));
+        meshData.addFace(new MeshData.Face3(v9, v8, v4));
+        meshData.addFace(new MeshData.Face3(v10, v9, v5));
+        meshData.addFace(new MeshData.Face3(v11, v10, v1));
+        
+        return meshData.subdivideFaces(divisions).spherifyMesh(radius);
+    }
+
+    public static MeshData createPlane(float xSize, float ySize, int xDivisions, int yDivisions, Axis axis)
+    {
+        MeshData mesh = new MeshData();
 
         float quadWidth = xSize / xDivisions;
         float quadHeight = ySize / yDivisions;
@@ -155,33 +205,33 @@ public class MeshHelper
         {
             for (int j = 0; j < yDivisions - 1; j++)
             {
-                GLMesh.Vertex v0 = new GLMesh.Vertex(axis.transform(new Vector3f((i + 0) * quadWidth, 0.0F, (j + 1) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
-                GLMesh.Vertex v1 = new GLMesh.Vertex(axis.transform(new Vector3f((i + 1) * quadWidth, 0.0F, (j + 1) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
-                GLMesh.Vertex v2 = new GLMesh.Vertex(axis.transform(new Vector3f((i + 1) * quadWidth, 0.0F, (j + 0) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
-                GLMesh.Vertex v3 = new GLMesh.Vertex(axis.transform(new Vector3f((i + 0) * quadWidth, 0.0F, (j + 0) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
+                MeshData.Vertex v0 = new MeshData.Vertex(axis.transform(new Vector3f((i + 0) * quadWidth, 0.0F, (j + 1) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
+                MeshData.Vertex v1 = new MeshData.Vertex(axis.transform(new Vector3f((i + 1) * quadWidth, 0.0F, (j + 1) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
+                MeshData.Vertex v2 = new MeshData.Vertex(axis.transform(new Vector3f((i + 1) * quadWidth, 0.0F, (j + 0) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
+                MeshData.Vertex v3 = new MeshData.Vertex(axis.transform(new Vector3f((i + 0) * quadWidth, 0.0F, (j + 0) * quadHeight), null), axis.getY(), new Vector2f(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
 
-                mesh.addFace(new GLMesh.Face4(v0, v1, v2, v3));
+                mesh.addFace(new MeshData.Face4(v0, v1, v2, v3));
             }
         }
 
         return mesh.compile();
     }
 
-    public static GLMesh createTorus(float innerRadius, float outerRadius, float xDivisions, float yDivisions)
+    public static MeshData createTorus(float innerRadius, float outerRadius, float xDivisions, float yDivisions)
     {
-        GLMesh mesh = GLMesh.create();
+        MeshData mesh = new MeshData();
 
         return mesh;
     }
 
-    public static GLMesh createCapsule(float radius, float distance, float xDivisions, float yDivisions)
+    public static MeshData createCapsule(float radius, float distance, float xDivisions, float yDivisions)
     {
-        GLMesh mesh = GLMesh.create();
+        MeshData mesh = new MeshData();
 
         return mesh;
     }
 
-    public static GLMesh parseObj(String file) throws IOException
+    public static MeshData parseObj(String file) throws IOException
     {
         WireEngine.getLogger().info("Loading OBJ filePath " + file);
         StringBuilder sb = new StringBuilder();
@@ -193,7 +243,7 @@ public class MeshHelper
             List<Vector3f> geometrics = new ArrayList<>();
             List<Vector3f> normals = new ArrayList<>();
             List<Vector2f> textures = new ArrayList<>();
-            List<GLMesh.Face3> faces = new ArrayList<>();
+            List<MeshData.Face3> faces = new ArrayList<>();
             List<Material> materials = new ArrayList<>();
             Material currentMaterial = null;
 
@@ -241,9 +291,9 @@ public class MeshHelper
 
                         if (i >= 1)
                         {
-                            GLMesh.Vertex v1 = new GLMesh.Vertex(geometrics.get(indices[0]), new Vector3f(), new Vector2f());
-                            GLMesh.Vertex v2 = new GLMesh.Vertex(geometrics.get(indices[1]), new Vector3f(), new Vector2f());
-                            GLMesh.Vertex v3 = new GLMesh.Vertex(geometrics.get(indices[2]), new Vector3f(), new Vector2f());
+                            MeshData.Vertex v1 = new MeshData.Vertex(geometrics.get(indices[0]), new Vector3f(), new Vector2f());
+                            MeshData.Vertex v2 = new MeshData.Vertex(geometrics.get(indices[1]), new Vector3f(), new Vector2f());
+                            MeshData.Vertex v3 = new MeshData.Vertex(geometrics.get(indices[2]), new Vector3f(), new Vector2f());
 
                             if (i >= 2)
                             {
@@ -263,7 +313,7 @@ public class MeshHelper
                                 }
                             }
 
-                            GLMesh.Face3 face = new GLMesh.Face3(v1, v2, v3);
+                            MeshData.Face3 face = new MeshData.Face3(v1, v2, v3);
 
                             if (currentMaterial != null)
                             {
@@ -306,8 +356,8 @@ public class MeshHelper
                 }
             }
 
-            GLMesh mesh = GLMesh.create();
-            mesh.addFaces(faces.toArray(new GLMesh.Face3[faces.size()]));
+            MeshData mesh = new MeshData();
+            mesh.addFaces(faces.toArray(new MeshData.Face3[faces.size()]));
             WireEngine.getLogger().info("Successfully loaded and compiled OBJ file");
 
             return mesh.compile();

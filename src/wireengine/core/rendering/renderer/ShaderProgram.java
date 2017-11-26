@@ -1,4 +1,4 @@
-package wireengine.core.rendering;
+package wireengine.core.rendering.renderer;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.util.vector.*;

@@ -2,9 +2,7 @@ package wireengine.core.util;
 
 import org.lwjgl.util.vector.Vector3f;
 
-import java.io.File;
 import java.util.List;
-import java.util.Vector;
 
 /**
  * Implementation of some string functions available in C and C++
@@ -15,6 +13,7 @@ public class Utils
 {
     /**
      * Finds the index of the first different character in the two strings.
+     *
      * @param a A string to iterate through
      * @param b A string to iterate through
      * @return The index of the first different character in both strings.
@@ -37,8 +36,9 @@ public class Utils
 
     /**
      * Compares two strings up to the first {@code maxChars}
-     * @param a The string to be compared
-     * @param b The string to compare to.
+     *
+     * @param a        The string to be compared
+     * @param b        The string to compare to.
      * @param maxChars The number of characers from the start of the string to compare.
      * @return 0 if the strings are equal up until {@code maxChars}, -1 if a is less than b, and +1 if b is less than a
      */
@@ -69,7 +69,7 @@ public class Utils
         {
             Integer.parseInt(str);
             return true;
-        } catch(NumberFormatException e)
+        } catch (NumberFormatException e)
         {
             return false;
         }
@@ -81,7 +81,7 @@ public class Utils
         {
             Float.parseFloat(str);
             return true;
-        } catch(NumberFormatException e)
+        } catch (NumberFormatException e)
         {
             return false;
         }
@@ -111,8 +111,9 @@ public class Utils
 
     /**
      * Checks if the specified list contains a Vector3f that is within a specified distance of the specified vector.
-     * @param list The list to check.
-     * @param vector The vector to find.
+     *
+     * @param list    The list to check.
+     * @param vector  The vector to find.
      * @param epsilon The maximum distance to find the vector in.
      * @return The index of the first vector contained in the list that was closer than {@code epsilon} to {@code vector}, -1 if none exists.
      */
@@ -134,7 +135,7 @@ public class Utils
                 {
                     Vector3f v = list.get(i);
 
-                    if (v != null && Vector3f.sub(v, vector, null).lengthSquared() <= epsilon * epsilon)
+                    if (vectorsWithinMargin(v, vector, epsilon))
                     {
                         return i;
                     }
@@ -143,5 +144,11 @@ public class Utils
                 return -1;
             }
         }
+    }
+
+    public static boolean vectorsWithinMargin(Vector3f a, Vector3f b, float epsilon)
+    {
+        // True if a and b are null, or if they are both not null and are within a margin of eachother.
+        return (a == null && b == null) || (a != null && b != null && MathUtils.distanceSquared(a, b) <= epsilon * epsilon);
     }
 }

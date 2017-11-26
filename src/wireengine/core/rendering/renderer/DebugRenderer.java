@@ -2,7 +2,6 @@ package wireengine.core.rendering.renderer;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.util.vector.*;
-import wireengine.core.rendering.ShaderProgram;
 import wireengine.core.rendering.geometry.Transformation;
 
 import java.nio.FloatBuffer;
@@ -15,6 +14,7 @@ import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 import static wireengine.core.rendering.geometry.GLMesh.*;
+import static wireengine.core.rendering.geometry.MeshData.*;
 
 /**
  * @author Kelan
@@ -33,6 +33,7 @@ public class DebugRenderer
     private Vector2f currentTexture = new Vector2f();
     private Vector4f currentColour = new Vector4f(1.0F, 1.0F, 1.0F, 1.0F); //If no colour is specified, use white.
     private Transformation transformation = new Transformation();
+    private boolean useLight = true;
 
     private DebugRenderer()
     {
@@ -56,7 +57,7 @@ public class DebugRenderer
         glVertexAttribPointer(ATTRIBUTE_LOCATION_TEXTURE, FLOATS_PER_TEXTURE, GL_FLOAT, false, TEXTURE_STRIDE_BYTES, TEXTURE_OFFSET_BYTES);
         glVertexAttribPointer(ATTRIBUTE_LOCATION_COLOUR, FLOATS_PER_COLOUR, GL_FLOAT, false, COLOUR_STRIDE_BYTES, COLOUR_OFFSET_BYTES);
 
-        upload(null, GL_ARRAY_BUFFER, vbo, FLOAT_SIZE_BYTES, this.numVertices, 0);
+        upload(null, GL_ARRAY_BUFFER, vbo, FLOAT_SIZE_BYTES, this.numVertices, 0, GL_DYNAMIC_DRAW);
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -134,11 +135,17 @@ public class DebugRenderer
         this.currentColour.w = v.getW();
     }
 
+    public void setLighting(boolean useLight)
+    {
+        this.useLight = useLight;
+    }
+
     public void end(ShaderProgram shaderProgram)
     {
         glDisable(GL_TEXTURE_2D);
         shaderProgram.setUniformBoolean("useTexture", false);
         shaderProgram.setUniformMatrix4f("modelMatrix", this.transformation.getMatrix(null));
+        shaderProgram.setUniformBoolean("useLight", this.useLight);
 
         if (this.primitive >= 0 && this.primitive < 10)
         {
@@ -150,7 +157,7 @@ public class DebugRenderer
 
             glDisable(GL_CULL_FACE);
             FloatBuffer buffer = this.createBuffer();
-            upload(buffer, GL_ARRAY_BUFFER, vbo, FLOAT_SIZE_BYTES, 0, 0);
+            upload(buffer, GL_ARRAY_BUFFER, vbo, FLOAT_SIZE_BYTES, 0, 0, GL_DYNAMIC_DRAW);
             glDrawArrays(this.primitive, 0, numVertices);
             glEnable(GL_CULL_FACE);
 

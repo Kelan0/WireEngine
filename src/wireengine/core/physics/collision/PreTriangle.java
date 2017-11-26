@@ -6,7 +6,7 @@ import wireengine.core.physics.collision.colliders.Triangle;
 /**
  * A small wrapper class used to deal with a triplet of vertices.
  * This is used instead of a regular triangle, because the constructor
- * of the regular Triangle class creates the normal, which involves an
+ * of the regular PolyTriangle class creates the normal, which involves an
  * expensive square root. These vertices can also be accessed directly
  * and are writable, where in the regular triangle the vertices are read-only.
  *

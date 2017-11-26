@@ -1,8 +1,9 @@
 package wireengine.core.rendering.geometry;
 
 import org.lwjgl.util.vector.Matrix4f;
+import wireengine.core.WireEngine;
 import wireengine.core.rendering.IRenderable;
-import wireengine.core.rendering.ShaderProgram;
+import wireengine.core.rendering.renderer.ShaderProgram;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -11,11 +12,10 @@ import static org.lwjgl.opengl.GL11.*;
  */
 public class Model implements IRenderable
 {
-    private MeshBuilder meshBuilder;
-    private GLMesh mesh;
+    private MeshData mesh;
     private Transformation transformation;
 
-    public Model(GLMesh mesh, Transformation transformation)
+    public Model(MeshData mesh, Transformation transformation)
     {
         this.mesh = mesh;
 
@@ -27,23 +27,12 @@ public class Model implements IRenderable
         this.transformation = transformation;
     }
 
-    public Model(MeshBuilder meshBuilder, Transformation transformation)
-    {
-        this((GLMesh) null, transformation);
-        this.meshBuilder = meshBuilder;
-    }
-
-    public Model(GLMesh mesh)
+    public Model(MeshData mesh)
     {
         this(mesh, new Transformation());
     }
 
-    public Model(MeshBuilder meshBuilder)
-    {
-        this(meshBuilder, new Transformation());
-    }
-
-    public GLMesh getMesh()
+    public MeshData getMesh()
     {
         return mesh;
     }
@@ -66,21 +55,31 @@ public class Model implements IRenderable
     @Override
     public void initRenderable()
     {
-        if (this.mesh == null && this.meshBuilder != null)
+        if (this.mesh != null)
         {
-            this.mesh = this.meshBuilder.build();
+            if (WireEngine.isRenderThread())
+            {
+                if (this.mesh.renderableMesh == null)
+                {
+                    this.mesh.compile();
+                }
+            }
         }
     }
 
     @Override
     public void render(double delta, ShaderProgram shaderProgram)
     {
-        Matrix4f mat = this.transformation.getMatrix(new Matrix4f());
-        shaderProgram.setUniformMatrix4f("modelMatrix", mat);
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
-        this.mesh.draw(shaderProgram);
+        if (this.mesh != null && this.mesh.renderableMesh != null)
+        {
+            Matrix4f mat = this.transformation.getMatrix(new Matrix4f());
+            shaderProgram.setUniformMatrix4f("modelMatrix", mat);
+            shaderProgram.setUniformBoolean("useLight", true);
+            glEnable(GL_DEPTH_TEST);
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+            this.mesh.renderableMesh.draw(shaderProgram);
+        }
     }
 
     @Override

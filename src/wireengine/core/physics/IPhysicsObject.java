@@ -1,6 +1,7 @@
 package wireengine.core.physics;
 
 import org.lwjgl.util.vector.Vector3f;
+import wireengine.core.rendering.geometry.Transformation;
 
 /**
  * @author Kelan
@@ -13,11 +14,17 @@ public interface IPhysicsObject
 
     void applyAcceleration(Vector3f acceleration);
 
-    Vector3f getPosition();
+    void applyTorque(Vector3f torque);
 
-    Vector3f getVelocity();
+    Transformation getTransformation();
 
-    Vector3f getAcceleration();
+    Vector3f getLinearVelocity();
+
+    Vector3f getLinearAcceleration();
+
+    Vector3f getAngularVelocity();
+
+    Vector3f getAngularAcceleration();
 
     float getMass();
 

@@ -1,6 +1,4 @@
-package wireengine.core.physics.collision;
-
-import org.lwjgl.util.vector.Vector3f;
+package wireengine.core.physics.collision.algorithm;
 
 import java.util.Arrays;
 
@@ -9,56 +7,67 @@ import java.util.Arrays;
  */
 public class Simplex
 {
-    private Vector3f[] points = new Vector3f[0];
+    private SupportPoint[] points = new SupportPoint[0];
 
-    public Simplex(Vector3f p0, Vector3f p1, Vector3f p2, Vector3f p3)
+    public Simplex(SupportPoint p0, SupportPoint p1, SupportPoint p2, SupportPoint p3)
     {
         this.set(p0, p1, p2, p3);
     }
 
-    public Simplex(Vector3f p0, Vector3f p1, Vector3f p2)
+    public Simplex(SupportPoint p0, SupportPoint p1, SupportPoint p2)
     {
         this.set(p0, p1, p2);
     }
 
-    public Simplex(Vector3f p0, Vector3f p1)
+    public Simplex(SupportPoint p0, SupportPoint p1)
     {
         this.set(p0, p1);
     }
 
-    public Simplex(Vector3f p0)
+    public Simplex(SupportPoint p0)
     {
         this.set(p0);
     }
 
-    public Simplex set(Vector3f p0, Vector3f p1, Vector3f p2, Vector3f p3)
+    public Simplex()
     {
-        this.points = new Vector3f[]{p0, p1, p2, p3};
+        this.set();
+    }
+
+    public Simplex set(SupportPoint p0, SupportPoint p1, SupportPoint p2, SupportPoint p3)
+    {
+        this.points = new SupportPoint[]{p0, p1, p2, p3};
         return this;
     }
 
-    public Simplex set(Vector3f p0, Vector3f p1, Vector3f p2)
+    public Simplex set(SupportPoint p0, SupportPoint p1, SupportPoint p2)
     {
-        this.points = new Vector3f[]{p0, p1, p2};
+        this.points = new SupportPoint[]{p0, p1, p2};
         return this;
     }
 
-    public Simplex set(Vector3f p0, Vector3f p1)
+    public Simplex set(SupportPoint p0, SupportPoint p1)
     {
-        this.points = new Vector3f[]{p0, p1};
+        this.points = new SupportPoint[]{p0, p1};
         return this;
     }
 
-    public Simplex set(Vector3f p0)
+    public Simplex set(SupportPoint p0)
     {
-        this.points = new Vector3f[]{p0};
+        this.points = new SupportPoint[]{p0};
         return this;
     }
 
-    public Simplex push(Vector3f point)
+    public Simplex set()
+    {
+        this.points = new SupportPoint[] {};
+        return this;
+    }
+
+    public Simplex push(SupportPoint point)
     {
         int size = Math.min(this.getSize() + 1, 4);
-        Vector3f[] newPoints = new Vector3f[size];
+        SupportPoint[] newPoints = new SupportPoint[size];
 
         for (int i = size - 1; i > 0; i--)
         {
@@ -77,7 +86,7 @@ public class Simplex
         return points.length;
     }
 
-    public Vector3f[] getPoints()
+    public SupportPoint[] getPoints()
     {
         return points;
     }

@@ -78,14 +78,14 @@ public final class WireEngine
 
     public static boolean isRenderThread()
     {
-        return false;
-//        return Thread.currentThread().getName().equals(WireEngine.engine().getRenderEngine().getThreadName());
+//        return false;
+        return Thread.currentThread().getName().equals(WireEngine.engine().getRenderEngine().getThreadName());
     }
 
     public static boolean isPhysicsThread()
     {
-        return false;
-//        return Thread.currentThread().getName().equals(WireEngine.engine().getPhysicsEngine().getThreadName());
+//        return false;
+        return Thread.currentThread().getName().equals(WireEngine.engine().getPhysicsEngine().getThreadName());
     }
 
     public void handleInput(double delta)

@@ -70,7 +70,7 @@ public class Transformation
 
     public Transformation set(Transformation transformation)
     {
-        return this.set(transformation.translation, transformation.rotation, transformation.scale);
+        return this.set(new Vector3f(transformation.translation), new Quaternion(transformation.rotation), new Vector3f(transformation.scale));
     }
 
     public Vector3f getTranslation()
@@ -90,9 +90,9 @@ public class Transformation
 
     public Transformation setTranslation(Vector3f translation, Axis axis)
     {
-        this.translation.x = translation.x;
-        this.translation.y = translation.y;
-        this.translation.z = translation.z;
+        this.translation.x = axis.getX().x * translation.x + axis.getY().x * translation.y + axis.getZ().x * translation.z;
+        this.translation.y = axis.getX().y * translation.x + axis.getY().y * translation.y + axis.getZ().y * translation.z;
+        this.translation.z = axis.getX().z * translation.x + axis.getY().z * translation.y + axis.getZ().z * translation.z;
         return this;
     }
 
@@ -103,17 +103,13 @@ public class Transformation
 
     public Transformation setRotation(Quaternion rotation)
     {
-        this.rotation.x = rotation.x;
-        this.rotation.y = rotation.y;
-        this.rotation.z = rotation.z;
+        this.rotation.set(rotation);
         return this;
     }
 
     public Transformation setScale(Vector3f scale)
     {
-        this.scale.x = scale.x;
-        this.scale.y = scale.y;
-        this.scale.z = scale.z;
+        this.scale.set(scale);
 
         return this;
     }

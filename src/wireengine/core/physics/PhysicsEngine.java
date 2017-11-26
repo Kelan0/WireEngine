@@ -1,5 +1,6 @@
 package wireengine.core.physics;
 
+import org.lwjgl.util.vector.Matrix3f;
 import org.lwjgl.util.vector.Vector3f;
 import wireengine.core.TickableThread;
 import wireengine.core.WireEngine;
@@ -14,8 +15,6 @@ import java.util.List;
  */
 public class PhysicsEngine extends TickableThread
 {
-    public static final float GRAVITY = 0.0F;//9.807F;
-
     private List<ITickable> tickList = new ArrayList<>();
 
     public PhysicsEngine()
@@ -47,12 +46,10 @@ public class PhysicsEngine extends TickableThread
 
         for (ITickable object : this.tickList)
         {
-            if (object.getPhysicsObject() != null)
-            {
-                object.getPhysicsObject().applyAcceleration(new Vector3f(0.0f, -GRAVITY, 0.0F));
-            }
-
-            object.tick(delta);
+            object.tick(1.0 / this.getMaxTickrate());
+            // Physics simulation should not have a variable tickrate, so we assume that the tickrate is stable and constant here. This
+            // has the side effect of noticeable choppiness and slowdowns if the real tickrate does dip too much, but it avoids things like
+            // runaway reactions, where an object gains energy after every collision.
         }
 
         WireEngine.engine().getEventHandler().postEvent(this, new TickEvent.PhysicsTickEvent(Event.State.POST, delta));

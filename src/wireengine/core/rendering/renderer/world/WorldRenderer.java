@@ -1,8 +1,9 @@
-package wireengine.core.rendering.renderer;
+package wireengine.core.rendering.renderer.world;
 
 import org.lwjgl.util.vector.Matrix4f;
+import wireengine.core.rendering.FrameBuffer;
 import wireengine.core.rendering.IRenderable;
-import wireengine.core.rendering.ShaderProgram;
+import wireengine.core.rendering.renderer.ShaderProgram;
 import wireengine.core.rendering.geometry.GLMesh;
 
 import java.io.IOException;
@@ -10,23 +11,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL20.GL_FRAGMENT_SHADER;
-import static org.lwjgl.opengl.GL20.GL_VERTEX_SHADER;
+import static org.lwjgl.opengl.GL20.*;
 
 /**
  * @author Kelan
  */
 public class WorldRenderer extends Renderer3D
 {
-    private ShaderProgram worldShader;
     private int polygonMode = GL_FILL;
     private boolean orthographicProjection = false;
     private List<IRenderable> renderList = new ArrayList<>();
+    private FrameBuffer sceneBuffer;
 
-    public WorldRenderer(int width, int height, float fov)
+    public WorldRenderer(int width, int height, float fov, FrameBuffer sceneBuffer)
     {
-        super(0, width, height, fov, 0.05F, 2048.0F);
-        this.worldShader = new ShaderProgram();
+        super(10, width, height, fov, 0.05F, 2048.0F);
+        this.sceneBuffer = sceneBuffer;
     }
 
     @Override
@@ -34,14 +34,16 @@ public class WorldRenderer extends Renderer3D
     {
         try
         {
-            worldShader.addShader(GL_VERTEX_SHADER, "res/shaders/vertex.glsl");
-            worldShader.addShader(GL_FRAGMENT_SHADER, "res/shaders/fragment.glsl");
-            worldShader.addAttribute(GLMesh.ATTRIBUTE_LOCATION_POSITION, "vertexPosition");
-            worldShader.addAttribute(GLMesh.ATTRIBUTE_LOCATION_NORMAL, "vertexNormal");
-            worldShader.addAttribute(GLMesh.ATTRIBUTE_LOCATION_TEXTURE, "vertexTexture");
-            worldShader.addAttribute(GLMesh.ATTRIBUTE_LOCATION_COLOUR, "vertexColour");
+            this.shader.addShader(GL_VERTEX_SHADER, "res/shaders/world/vertex.glsl");
+            this.shader.addShader(GL_FRAGMENT_SHADER, "res/shaders/world/fragment.glsl");
+            this.shader.addAttribute(GLMesh.ATTRIBUTE_LOCATION_POSITION, "vertexPosition");
+            this.shader.addAttribute(GLMesh.ATTRIBUTE_LOCATION_NORMAL, "vertexNormal");
+            this.shader.addAttribute(GLMesh.ATTRIBUTE_LOCATION_TEXTURE, "vertexTexture");
+            this.shader.addAttribute(GLMesh.ATTRIBUTE_LOCATION_COLOUR, "vertexColour");
 
-            worldShader.createProgram();
+            this.shader.createProgram();
+
+            this.sceneBuffer.init();
 
             for (IRenderable renderable : this.renderList)
             {
@@ -57,18 +59,41 @@ public class WorldRenderer extends Renderer3D
     @Override
     public void render(double delta, double time)
     {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glPolygonMode(GL_FRONT_AND_BACK, polygonMode);
-        createProjection(false);
-        worldShader.useProgram(true);
-        worldShader.setUniformMatrix4f("projectionMatrix", projectionMatrix);
+        if (this.sceneBuffer != null)
+        {
+            this.sceneBuffer.bind(true);
+        }
+
+        preRender(delta);
 
         for (IRenderable renderable : this.renderList)
         {
-            renderable.render(delta, worldShader);
+            renderable.render(delta, this.shader);
         }
 
-        worldShader.useProgram(false);
+        postRender(delta);
+
+        if (this.sceneBuffer != null)
+        {
+            this.sceneBuffer.bind(false);
+        }
+    }
+
+    public void preRender(double delta)
+    {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glPolygonMode(GL_FRONT_AND_BACK, polygonMode);
+        glEnable(GL_DEPTH_TEST);
+        createProjection(false);
+
+        this.shader.useProgram(true);
+        this.shader.setUniformMatrix4f("projectionMatrix", projectionMatrix);
+        this.shader.setUniformBoolean("useLight", this.polygonMode == GL_FILL);
+    }
+
+    public void postRender(double delta)
+    {
+        this.shader.useProgram(false);
     }
 
     @Override
@@ -89,7 +114,7 @@ public class WorldRenderer extends Renderer3D
 
     public ShaderProgram getShader()
     {
-        return worldShader;
+        return this.shader;
     }
 
     public int getPolygonMode()

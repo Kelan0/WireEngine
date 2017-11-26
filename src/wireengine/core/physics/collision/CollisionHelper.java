@@ -24,6 +24,11 @@ public class CollisionHelper
 
     public static boolean rayPlaneIntersection(ReadableVector3f rayOrigin, ReadableVector3f rayDirection, float rayLength, ReadableVector3f planeNormal, ReadableVector3f planePoint, Vector3f destCollisionPoint)
     {
+        if (destCollisionPoint == null)
+        {
+            destCollisionPoint = new Vector3f();
+        }
+
         float d = Vector3f.dot(new Vector3f(planeNormal), new Vector3f(rayDirection));
 
         if (Math.abs(d) > 0.0001F)
@@ -32,7 +37,7 @@ public class CollisionHelper
 
             if (t >= 0.0F)
             {
-//                if (Float.isInfinite(rayLength) || t < rayLength)
+                if (Float.isInfinite(rayLength) || t < rayLength)
                 {
                     destCollisionPoint.x = rayOrigin.getX() + rayDirection.getX() * t;
                     destCollisionPoint.y = rayOrigin.getY() + rayDirection.getY() * t;

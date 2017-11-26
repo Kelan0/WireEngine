@@ -1,14 +1,19 @@
 package wireengine.core.physics.collision;
 
+import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.ReadableVector3f;
 import org.lwjgl.util.vector.Vector3f;
+import org.lwjgl.util.vector.Vector4f;
+import wireengine.core.physics.collision.colliders.Ray;
 import wireengine.core.physics.collision.colliders.Triangle;
-import wireengine.core.rendering.geometry.GLMesh;
+import wireengine.core.rendering.geometry.MeshData;
 import wireengine.core.rendering.geometry.Model;
 import wireengine.core.rendering.geometry.Transformation;
+import wireengine.core.util.MathUtils;
 import wireengine.core.util.Utils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -36,7 +41,7 @@ public class Collider
 
                 for (Vector3f pos : triVerts)
                 {
-                    LinkedVertex vertex = new LinkedVertex(pos, new int[0]);
+                    LinkedVertex vertex = new LinkedVertex(pos, new int[0], 0);
                     int index = Utils.getCloseIndex(this.vertices, pos, epsilon);
 
                     if (index < 0)
@@ -67,39 +72,56 @@ public class Collider
     public Collider(List<Vector3f> vertices, List<Integer> indices, Transformation transformation)
     {
         this.transformation = transformation;
-//        List<Triangle> triangles = new ArrayList<>();
-//
-//        for (int i = 0; i < indices.length;)
-//        {
-//            Vector3f v0 = vertices.get(i++);
-//            Vector3f v1 = vertices.get(i++);
-//            Vector3f v2 = vertices.get(i++);
-//
-//            triangles.add(new Triangle(v0, v1, v2));
-//        }
-//
-//        this.set(triangles);
 
-        for (int i = 0; i < indices.size();)
+        for (Vector3f vertex : vertices)
         {
-            this.vertices.add(new LinkedVertex(vertices.get(indices.get(i++))));
-            this.vertices.add(new LinkedVertex(vertices.get(indices.get(i++))));
-            this.vertices.add(new LinkedVertex(vertices.get(indices.get(i++))));
+            this.vertices.add(new LinkedVertex(vertex, -1));
+        }
+
+        for (int index : indices)
+        {
+            this.vertices.get(index).index = index;
         }
 
         for (int i = 0; i < indices.size();)
         {
-            int i0 = indices.get(i++);
-            int i1 = indices.get(i++);
-            int i2 = indices.get(i++);
+            LinkedVertex v0 = this.vertices.get(indices.get(i++));
+            LinkedVertex v1 = this.vertices.get(indices.get(i++));
+            LinkedVertex v2 = this.vertices.get(indices.get(i++));
 
-            this.vertices.get(i0).addLink(i1).addLink(i2);
-            this.vertices.get(i1).addLink(i0).addLink(i2);
-            this.vertices.get(i2).addLink(i0).addLink(i1);
+            this.triangles.add(new Triangle(v0, v1, v2));
+        }
+
+        constructAdjacents();
+    }
+
+    public void constructAdjacents()
+    {
+        for (Triangle triangle : this.triangles)
+        {
+            LinkedVertex[] verts = new LinkedVertex[]{(LinkedVertex) triangle.getP1(), (LinkedVertex) triangle.getP2(), (LinkedVertex) triangle.getP3()};
+
+            for (int i0 = 0; i0 < verts.length; i0++)
+            {
+                for (int i1 = 0; i1 < verts.length; i1++)
+                {
+                    if (i0 == i1)
+                    {
+                        continue;
+                    }
+
+                    this.vertices.get(verts[i0].index).addLink(verts[i1].index);
+                }
+            }
         }
     }
 
-    public Collider(GLMesh mesh, Transformation transformation)
+    public void simplifyMesh()
+    {
+        // Remove duplicated vertices in the list of triangles. For example, two triangles might share a vertex at the same position, but two separate vertices for each triangle was added to the list.
+    }
+
+    public Collider(MeshData mesh, Transformation transformation)
     {
         this(mesh.getGeometrics(), mesh.getIndices(), transformation);
     }
@@ -111,8 +133,10 @@ public class Collider
 
     public Vector3f getFurthestVertex(Vector3f direction)
     {
+        direction = MathUtils.rotateVector3f(this.transformation.getRotation().negate(null), direction, null);
+
         int currentIndex = 0;
-        float currentDistance = Vector3f.dot(vertices.get(currentIndex), direction);
+        float currentDistance = Vector3f.dot(this.vertices.get(currentIndex), direction);
 
         while (true)
         {
@@ -141,7 +165,68 @@ public class Collider
             }
         }
 
-        return this.vertices.get(currentIndex);
+        return this.getVertex(currentIndex, true);
+    }
+
+    private LinkedVertex getVertex(int index, boolean transformed)
+    {
+        if (index < 0 || index >= this.vertices.size())
+        {
+            return null;
+        }
+
+        LinkedVertex vertex = this.vertices.get(index);
+
+        if (transformed)
+        {
+            LinkedVertex newVertex = new LinkedVertex(vertex);
+            newVertex.set(newVertex.getTransformed(this.transformation));
+
+            return newVertex;
+        }
+
+        return vertex;
+    }
+
+    public boolean rayIntersects(Ray ray, Vector3f destCollisionPoint)
+    {
+        return rayIntersects(ray, destCollisionPoint, false);
+    }
+
+    public boolean rayIntersects(Ray ray, Vector3f destCollisionPoint, boolean findClosest)
+    {
+        //TODO: make this function faster. Maybe use a hill-climbing algorithm to walk towards the ray and check if the ray intersects that triangle.
+
+        Vector3f closestPoint = null;
+
+        for (Triangle triangle : this.triangles)
+        {
+            Triangle newTri = triangle.getTransformed(this.transformation);
+
+            Vector3f collisionPoint = new Vector3f();
+            if (newTri.rayIntersects(ray, collisionPoint))
+            {
+                if (findClosest)
+                {
+                    if (closestPoint == null || MathUtils.distanceSquared(collisionPoint, ray.origin) < MathUtils.distanceSquared(closestPoint, ray.origin))
+                    {
+                        closestPoint = collisionPoint;
+                    }
+                } else
+                {
+                    closestPoint = collisionPoint;
+                    break;
+                }
+            }
+        }
+
+        if (closestPoint != null)
+        {
+            destCollisionPoint.set(closestPoint);
+            return true;
+        }
+
+        return false;
     }
 
     public Transformation getTransformation()
@@ -176,39 +261,33 @@ public class Collider
 
     private class LinkedVertex extends Vector3f
     {
-        public int[] links;
+        public int index = -1;
+        public int[] links = new int[0];
 
-        public LinkedVertex()
-        {
-            super();
-        }
-
-        public LinkedVertex(ReadableVector3f src)
+        public LinkedVertex(ReadableVector3f src, int[] links, int index)
         {
             super(src);
-        }
-
-        public LinkedVertex(float x, float y, float z)
-        {
-            super(x, y, z);
-        }
-
-        public LinkedVertex(int[] links)
-        {
-            this();
             this.links = links;
+            this.index = index;
         }
 
-        public LinkedVertex(ReadableVector3f src, int[] links)
+        public LinkedVertex(ReadableVector3f src, int index)
         {
-            this(src);
-            this.links = links;
+            this(src, new int[0], index);
         }
 
-        public LinkedVertex(float x, float y, float z, int[] links)
+        public LinkedVertex(LinkedVertex src)
         {
-            this(x, y, z);
-            this.links = links;
+            this(src, src.links, src.index);
+        }
+
+        public Vector3f getTransformed(Transformation transformation)
+        {
+            Vector4f transformed = new Vector4f(this.x, this.y, this.z, 1.0F);
+
+            Matrix4f.transform(transformation.getMatrix(null), transformed, transformed);
+
+            return new Vector3f(transformed);
         }
 
 
@@ -245,6 +324,12 @@ public class Collider
         public int getNumLinks()
         {
             return this.links.length;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "LinkedVertex{" + this.x + ", " + this.y + ", " +  this.z + ", index=" + index + ", links=" + Arrays.toString(links) + '}';
         }
     }
 }

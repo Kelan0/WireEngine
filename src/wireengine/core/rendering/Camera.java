@@ -3,6 +3,7 @@ package wireengine.core.rendering;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Quaternion;
 import org.lwjgl.util.vector.Vector3f;
+import wireengine.core.rendering.renderer.ShaderProgram;
 import wireengine.core.util.MathUtils;
 import wireengine.testgame.TestGame;
 

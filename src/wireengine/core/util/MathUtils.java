@@ -65,6 +65,28 @@ public class MathUtils
         return new Vector3f(a.x / b.x, a.y / b.y, a.z / b.z);
     }
 
+    public static Vector3f reflect(Vector3f vector, Vector3f normal, Vector3f dest)
+    {
+        if (dest == null)
+        {
+            dest = new Vector3f();
+        }
+
+        float vDotN = Vector3f.dot(vector, normal);
+        dest.x = -2.0F * vDotN * normal.x + vector.x;
+        dest.y = -2.0F * vDotN * normal.y + vector.y;
+        dest.z = -2.0F * vDotN * normal.z + vector.z;
+
+        return dest;
+    }
+
+    public static void setVectorElement(WritableVector3f vector, float value, int i)
+    {
+        if (i == 0) vector.setX(value);
+        if (i == 1) vector.setY(value);
+        if (i == 2) vector.setZ(value);
+    }
+
     public static float getVectorElement(ReadableVector3f vector, int i)
     {
         return getVectorArray(vector)[i];
@@ -132,6 +154,11 @@ public class MathUtils
             v.y = -w.x * u.z;
             v.z = w.x * u.y;
         }
+    }
+
+    public static Quaternion quaternionDifference(Quaternion a, Quaternion b)
+    {
+        return Quaternion.mul(Quaternion.negate(a, null), b, null);
     }
 
     public static Quaternion axisAngleToQuaternion(Vector3f axis, float radians, Quaternion dest)

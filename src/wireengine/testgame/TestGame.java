@@ -2,6 +2,7 @@ package wireengine.testgame;
 
 import org.lwjgl.util.vector.Quaternion;
 import org.lwjgl.util.vector.Vector3f;
+import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.GameSettings;
 import wireengine.core.WireEngine;
 import wireengine.core.entity.EntityObject;
@@ -9,13 +10,21 @@ import wireengine.core.entity.Player;
 import wireengine.core.event.events.TickEvent;
 import wireengine.core.level.Level;
 import wireengine.core.level.LevelLoader;
-import wireengine.core.rendering.geometry.MeshBuilder;
+import wireengine.core.rendering.FrameBuffer;
+import wireengine.core.rendering.geometry.MeshData;
+import wireengine.core.rendering.geometry.MeshHelper;
 import wireengine.core.rendering.geometry.Transformation;
-import wireengine.core.rendering.renderer.WorldRenderer;
+import wireengine.core.rendering.renderer.gui.FontRenderer;
+import wireengine.core.rendering.renderer.gui.GuiRenderer;
+import wireengine.core.rendering.renderer.gui.font.FontData;
+import wireengine.core.rendering.renderer.gui.font.Line;
+import wireengine.core.rendering.renderer.gui.font.StaticText;
+import wireengine.core.rendering.renderer.world.WorldRenderer;
 import wireengine.core.util.Constants;
 import wireengine.core.util.MathUtils;
 import wireengine.core.window.InputHandler;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
@@ -30,10 +39,12 @@ public class TestGame extends Game
 {
     private static TestGame instance;
     private WorldRenderer worldRenderer;
+    private GuiRenderer guiRenderer;
     private String[] gameSettings;
     private Level level;
     private Player player;
     private LevelLoader levelLoader;
+    private FontRenderer fontRenderer;
 
     public TestGame(String[] gameSettings)
     {
@@ -45,14 +56,22 @@ public class TestGame extends Game
     {
         GameSettings settings = engine().getGameSettings();
         settings.parse(this.gameSettings);
-        this.worldRenderer = new WorldRenderer(settings.getWindowWidth(), settings.getWindowHeight(), 70.0F);
+
+        FrameBuffer sceneBuffer = new FrameBuffer(settings.getWindowWidth(), settings.getWindowHeight());
+        this.worldRenderer = new WorldRenderer(settings.getWindowWidth(), settings.getWindowHeight(), 70.0F, sceneBuffer);
+        this.guiRenderer = new GuiRenderer(1, settings.getWindowWidth(), settings.getWindowHeight(), sceneBuffer);
+        this.fontRenderer = new FontRenderer(1, settings.getWindowWidth(), settings.getWindowHeight());
+
         WireEngine.engine().getRenderEngine().addRenderer(this.worldRenderer);
+        WireEngine.engine().getRenderEngine().addRenderer(this.guiRenderer);
+        WireEngine.engine().getRenderEngine().addRenderer(this.fontRenderer);
 
         try
         {
             this.levelLoader = new LevelLoader();
             this.level = levelLoader.loadLevel("res/level/level.dat"); //TODO read and write level data to a file.
             this.player = new Player();
+            this.level.addPlayer(player);
         } catch (IOException e)
         {
             e.printStackTrace();
@@ -61,18 +80,31 @@ public class TestGame extends Game
         this.worldRenderer.addRenderable(this.level);
         WireEngine.engine().getPhysicsEngine().addTickable(this.level);
 
-        this.level.addEntity(player);
-
         Random random = WireEngine.engine().getRandom();
 
-        for (int i = 0; i < 8; i++)
+        Vector3f spawnArea = new Vector3f(20.0F, 4.0F, 20.0F);
+        for (int i = 0; i < 15; i++)
         {
-            Vector3f position = new Vector3f(random.nextFloat() * 8.0F, Math.abs(random.nextFloat() * 8.0F), random.nextFloat() * 8.0F);
-            Quaternion rotation = MathUtils.axisAngleToQuaternion(new Vector3f(random.nextFloat(), random.nextFloat(), random.nextFloat()).normalise(null), (float) (random.nextFloat() * Constants.PI * 2.0F), null);
-            Vector3f scale = new Vector3f(random.nextFloat() + 1.0F, random.nextFloat() + 1.0F, random.nextFloat() + 1.0F);
+            Vector3f position = new Vector3f(random.nextFloat() * spawnArea.x - spawnArea.x * 0.5F, random.nextFloat() * spawnArea.y, random.nextFloat() * spawnArea.z - spawnArea.z * 0.5F);
 
-            MeshBuilder mesh = new MeshBuilder.CuboidBuilder(scale);
-            this.level.addEntity(new EntityObject("box" + i, 20.0F, mesh, new Transformation(position, rotation)));
+            if (WireEngine.engine().getRandom().nextFloat() < 0.5)
+            {
+                Quaternion rotation = MathUtils.axisAngleToQuaternion(new Vector3f(random.nextFloat(), random.nextFloat(), random.nextFloat()).normalise(null), (float) (random.nextFloat() * Constants.PI * 2.0F), null);
+                Vector3f scale = new Vector3f(random.nextFloat() * 2.0F, random.nextFloat() * 2.0F, random.nextFloat() * 2.0F);
+                MeshData mesh = MeshHelper.createCuboid(Vector3f.add(scale, new Vector3f(0.5F, 0.5F, 0.5F), null));
+                float mass = 1.0F + scale.x * scale.y * scale.z;
+
+                EntityObject entity = new EntityObject("box" + i, mass, mesh, new Transformation(position, rotation));
+                entity.physicsObject.applyTorque((Vector3f) new Vector3f(random.nextFloat(), random.nextFloat(), random.nextFloat()).normalise(null).scale(random.nextFloat() * 3.0F));
+                this.level.addEntity(entity);
+            } else
+            {
+                float radius = random.nextFloat() * 2.0F;
+                MeshData mesh = MeshHelper.createIcosphere(random.nextInt(5), radius);
+
+                float mass = (float) (1.0F + (4.0F / 3.0F) * Constants.PI * radius * radius * radius);
+                this.level.addEntity(new EntityObject("ball" + i, mass, mesh, new Transformation(position)));
+            }
         }
     }
 
@@ -122,14 +154,38 @@ public class TestGame extends Game
         return worldRenderer;
     }
 
+    public Level getLevel()
+    {
+        return level;
+    }
+
+    public Player getPlayer()
+    {
+        return player;
+    }
+
     public static TestGame getInstance()
     {
         return instance;
     }
 
-    public static void main(String[] args) throws InterruptedException
+    public static void main(String[] args) throws InterruptedException, IOException
     {
         TestGame.instance = new TestGame(args);
         WireEngine.createEngine(TestGame.instance);
+
+//        FontData font = FontData.loadFont(new File("res/fonts/arial.fnt"));
+//        String str = "test string\nnew line\n\n\na very long line to cause the line to break once the line length exceeds the maximum allowed length.";
+//
+//        Thread.sleep(100);
+//        long a = System.nanoTime();
+//        StaticText text = new StaticText(str, font, 3000, false);
+//        long b = System.nanoTime();
+//
+//        System.out.println(((float) (b - a) / 1000000.0F) + "ms to build text");
+//        for (Line line : text.getLines())
+//        {
+//            System.out.println(line);
+//        }
     }
 }

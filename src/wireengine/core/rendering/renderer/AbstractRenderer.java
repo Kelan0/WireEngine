@@ -1,21 +1,16 @@
 package wireengine.core.rendering.renderer;
 
-import org.lwjgl.opengl.GL;
-import wireengine.core.rendering.ShaderProgram;
-
-import static org.lwjgl.opengl.GL11.*;
-
 /**
  * @author Kelan
  */
-public abstract class Renderer implements Comparable<Renderer>
+public abstract class AbstractRenderer implements Comparable<AbstractRenderer>
 {
     private int priority;
     protected int width;
     protected int height;
     protected ShaderProgram shader;
 
-    public Renderer(int priority, int width, int height)
+    public AbstractRenderer(int priority, int width, int height)
     {
         this.priority = priority;
         this.width = width;
@@ -30,21 +25,6 @@ public abstract class Renderer implements Comparable<Renderer>
     public abstract void cleanup();
 
     public abstract void createProjection(boolean immediate);
-
-    public void initImmediateMode()
-    {
-        glViewport(0, 0, width, height);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadIdentity();
-        createProjection(true);
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-
-        glLoadIdentity();
-    }
 
     public int getWidth()
     {
@@ -80,7 +60,7 @@ public abstract class Renderer implements Comparable<Renderer>
      * @return -1 if this rendering should be rendered before the other rendering.
      */
     @Override
-    public final int compareTo(Renderer renderer)
+    public final int compareTo(AbstractRenderer renderer)
     {
         return Integer.compare(renderer.priority, priority);
     }

@@ -108,32 +108,39 @@ public abstract class TickableThread implements ITickable, Runnable
 
     private Exception doTick()
     {
+//        if (WireEngine.isRenderThread())
+//        {
+//            System.out.println(this.getScheduledTicks() + " thcks scheduled for renderer");
+//        }
         try
         {
             Thread.sleep(2); //CPU usage is high without this because of the synchronized blocks.
-            long currentTime = System.nanoTime();
 
-            if (timeSeconds < 0.0)
-            { //Handle first tick, as lastTime starts at 0 ns, and this causes timeSeconds to start at about 2 seconds rather than 0 seconds. This can mess up some time-sensitive animations.
-                lastTime = currentTime;
-                timeSeconds = 0.0;
-            }
+//            if (timeSeconds < 0.0)
+//            { //Handle first tick, as lastTime starts at 0 ns, and this causes timeSeconds to start at about 2 seconds rather than 0 seconds. This can mess up some time-sensitive animations.
+//                lastTime = currentTime;
+//                timeSeconds = 0.0;
+//            }
+
 
 
             for (int i = 0; i < this.getScheduledTicks(); i++)
             {
+                long currentTime = System.nanoTime();
                 double elapsedTime = (double) (currentTime - lastTime);
                 double delta = elapsedTime / 1000000000.0;
 
                 this.lastTime = currentTime;
                 this.scheduledTicks--;
                 this.timeSeconds += delta;
+
                 this.tick(delta);
                 this.lastDelta = delta;
+
+                double nsPerTick = 1000000000.0 * this.lastDelta;
+                this.partialTicks = (currentTime - lastTime) / nsPerTick;
             }
 
-            double nsPerTick = 1000000000.0 * this.lastDelta;
-            this.partialTicks = (currentTime - lastTime) / nsPerTick;
         } catch (Exception e)
         {
             return e;

@@ -2,10 +2,12 @@ package wireengine.core.physics;
 
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
+import wireengine.core.physics.collision.AxisAlignedBB;
 import wireengine.core.physics.collision.Collider;
 import wireengine.core.physics.collision.colliders.Triangle;
-import wireengine.core.rendering.ShaderProgram;
+import wireengine.core.rendering.geometry.Transformation;
 import wireengine.core.rendering.renderer.DebugRenderer;
+import wireengine.core.rendering.renderer.ShaderProgram;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,12 +19,19 @@ import static org.lwjgl.opengl.GL11.*;
  */
 public class PhysicsObject implements IPhysicsObject
 {
+    protected AxisAlignedBB aabb;
     protected Collider collider;
-    protected Vector3f position = new Vector3f();
-    protected Vector3f velocity = new Vector3f();
-    protected Vector3f acceleration = new Vector3f();
+
+    protected Transformation transformation;
+    protected Vector3f linearVelocity = new Vector3f();
+    protected Vector3f linearAcceleration = new Vector3f();
+    protected Vector3f angularVelocity = new Vector3f();
+    protected Vector3f angularAcceleration = new Vector3f();
+
     protected float mass = 1.0F;
     protected boolean onGround = false;
+    protected boolean dampVelocity = false;
+
     protected final boolean isStatic;
 
     public PhysicsObject(Collider collider, float mass, boolean isStatic)
@@ -33,7 +42,8 @@ public class PhysicsObject implements IPhysicsObject
 
         if (collider != null)
         {
-            this.position = collider.getTransformation().getTranslation();
+            this.transformation = collider.getTransformation();
+            this.aabb = AxisAlignedBB.getMinimumEnclosingBB(collider.getVertices());
         }
     }
 
@@ -47,42 +57,47 @@ public class PhysicsObject implements IPhysicsObject
     {
         float velocityDamper = 5.6F; //kind of like friction I guess.
 
-        getVelocity().x += getAcceleration().x * delta;
-        getVelocity().y += getAcceleration().y * delta;
-        getVelocity().z += getAcceleration().z * delta;
+        Vector3f position = this.getTransformation().getTranslation();
+        Vector3f linearVelocity = this.getLinearVelocity();
+        Vector3f linearAcceleration = this.getLinearAcceleration();
 
-        float dot = Vector3f.dot(this.velocity, this.acceleration);
-        if (dot <= 0.0F) //TODo: scale the velocity damper value based on how much the velocity and the acceleration face in the same direction.
+        linearVelocity.x += linearAcceleration.x * delta;
+        linearVelocity.y += linearAcceleration.y * delta;
+        linearVelocity.z += linearAcceleration.z * delta;
+
+        float dot = Vector3f.dot(linearVelocity, linearAcceleration);
+        if (dot <= 0.0F && dampVelocity) //TODo: scale the linearVelocity damper value based on how much the linearVelocity and the linearAcceleration face in the same direction.
         {
-            this.velocity.x /= 1.0F + velocityDamper * delta;
-            this.velocity.y /= 1.0F + velocityDamper * delta;
-            this.velocity.z /= 1.0F + velocityDamper * delta;
+            linearVelocity.x /= 1.0F + velocityDamper * delta;
+            linearVelocity.y /= 1.0F + velocityDamper * delta;
+            linearVelocity.z /= 1.0F + velocityDamper * delta;
         }
 
-        getPosition().x += getVelocity().x * delta;// + 0.5F * object.getAcceleration().x * delta * delta;
-        getPosition().y += getVelocity().y * delta;// + 0.5F * object.getAcceleration().y * delta * delta;
-        getPosition().z += getVelocity().z * delta;// + 0.5F * object.getAcceleration().z * delta * delta;
+        position.x += linearVelocity.x * delta + 0.5F * linearAcceleration.x * delta * delta;
+        position.y += linearVelocity.y * delta + 0.5F * linearAcceleration.y * delta * delta;
+        position.z += linearVelocity.z * delta + 0.5F * linearAcceleration.z * delta * delta;
         updateColliders();
-        this.acceleration = new Vector3f();
+
+        this.linearAcceleration = new Vector3f();
     }
 
     private void updateColliders()
     {
         if (this.collider != null)
         {
-            this.collider.getTransformation().setTranslation(this.position);
+            this.aabb.setTransform(this.collider.getTransformation());
         }
     }
 
-    public void renderDebug(ShaderProgram shaderProgram, Vector4f colour, int renderMode)
+    public synchronized void renderDebug(ShaderProgram shaderProgram, Vector4f colour, int renderMode)
     {
         DebugRenderer.getInstance().begin(renderMode);
-        DebugRenderer.getInstance().translate(this.position);
 
         if (this.collider != null && this.collider.getNumTriangles() > 0)
         {
             for (Triangle triangle : this.collider.getTriangles())
             {
+                triangle = triangle.getTransformed(this.getTransformation());
                 DebugRenderer.getInstance().addColour(colour);
 
                 if (renderMode == GL_LINES)
@@ -108,6 +123,8 @@ public class PhysicsObject implements IPhysicsObject
             }
         }
         DebugRenderer.getInstance().end(shaderProgram);
+
+        this.aabb.renderDebug(shaderProgram, colour);
     }
 
     @Override
@@ -119,35 +136,43 @@ public class PhysicsObject implements IPhysicsObject
     @Override
     public synchronized void applyAcceleration(Vector3f acceleration)
     {
-        Vector3f.add(acceleration, this.acceleration, this.acceleration);
+        Vector3f.add(acceleration, this.linearAcceleration, this.linearAcceleration);
     }
 
     @Override
-    public synchronized Vector3f getPosition()
+    public synchronized void applyTorque(Vector3f torque)
     {
-        return this.position;
+
     }
 
     @Override
-    public synchronized Vector3f getVelocity()
+    public synchronized Transformation getTransformation()
     {
-        return velocity;
+        return transformation;
     }
 
     @Override
-    public synchronized Vector3f getAcceleration()
+    public synchronized Vector3f getLinearVelocity()
     {
-        return acceleration;
+        return this.linearVelocity;
     }
 
-    public synchronized Vector3f getVelocity(double delta)
+    @Override
+    public synchronized Vector3f getLinearAcceleration()
     {
-        return (Vector3f) new Vector3f(getVelocity()).scale((float) delta);
+        return linearAcceleration;
     }
 
-    public synchronized Vector3f getAcceleration(double delta)
+    @Override
+    public synchronized Vector3f getAngularVelocity()
     {
-        return (Vector3f) new Vector3f(getAcceleration()).scale((float) delta);
+        return this.angularVelocity;
+    }
+
+    @Override
+    public synchronized Vector3f getAngularAcceleration()
+    {
+        return this.angularAcceleration;
     }
 
     @Override
@@ -167,6 +192,16 @@ public class PhysicsObject implements IPhysicsObject
         return onGround;
     }
 
+    public boolean doDampVelocity()
+    {
+        return dampVelocity;
+    }
+
+    public void setDampVelocity(boolean dampVelocity)
+    {
+        this.dampVelocity = dampVelocity;
+    }
+
     public synchronized List<Triangle> getTriangles()
     {
         if (this.collider != null)
@@ -175,5 +210,15 @@ public class PhysicsObject implements IPhysicsObject
         }
 
         return new ArrayList<>();
+    }
+
+    public Collider getCollider()
+    {
+        return this.collider;
+    }
+
+    public AxisAlignedBB getAxisAlignedBB()
+    {
+        return aabb;
     }
 }

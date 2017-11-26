@@ -2,7 +2,7 @@ package wireengine.core.rendering.geometry;
 
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
-import wireengine.core.rendering.ShaderProgram;
+import wireengine.core.rendering.renderer.ShaderProgram;
 
 /**
  * @author Kelan

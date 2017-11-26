@@ -19,11 +19,11 @@ public class TriangleTriangleCollisionHandler
     {
         List<CollisionResult> collisions = new ArrayList<>();
 
-//        for (Triangle ta : aObject.getTriangles())
+//        for (PolyTriangle ta : aObject.getTriangles())
 //        {
-//            for (Triangle tb : staticColliders)
+//            for (PolyTriangle tb : staticColliders)
 //            {
-//                CollisionResult collision = checkTriangles(new SweptTriangle(ta, aObject.getVelocity()), new SweptTriangle(tb, new Vector3f()));
+//                CollisionResult collision = checkTriangles(new SweptTriangle(ta, aObject.getLinearVelocity()), new SweptTriangle(tb, new Vector3f()));
 //            }
 //        }
 
@@ -41,8 +41,8 @@ public class TriangleTriangleCollisionHandler
                 float epsilon = 0.0001F;
                 CollisionResult collision = new CollisionResult(aObject, bObject);
 
-                SweptTriangle sta = new SweptTriangle(ta, aObject.getVelocity());
-                SweptTriangle stb = new SweptTriangle(tb, bObject.getVelocity());
+                SweptTriangle sta = new SweptTriangle(ta, aObject.getLinearVelocity());
+                SweptTriangle stb = new SweptTriangle(tb, bObject.getLinearVelocity());
 
                 if (checkTriangles(sta, stb, collision, delta))
                 {

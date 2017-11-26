@@ -3,7 +3,7 @@ package wireengine.core.rendering.geometry;
 import de.matthiasmann.twl.utils.PNGDecoder;
 import org.lwjgl.util.vector.Vector3f;
 import wireengine.core.WireEngine;
-import wireengine.core.rendering.ShaderProgram;
+import wireengine.core.rendering.renderer.ShaderProgram;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -36,13 +36,13 @@ public final class Texture
     private int textureUnit = GL_TEXTURE0;
     private int textureTarget = GL_TEXTURE_2D;
     private int textureFormat = GL_RGBA;
-    private int textureID;
+    private int textureID = -1;
     private int width;
     private int height;
 
-    Texture()
+    public Texture()
     {
-
+        this.textureID = glGenTextures();
     }
 
     Texture loadTexture()
@@ -62,26 +62,16 @@ public final class Texture
             {
                 FileInputStream inputStream = new FileInputStream(file);
                 PNGDecoder pngDecoder = new PNGDecoder(inputStream);
-                this.width = pngDecoder.getWidth();
-                this.height = pngDecoder.getHeight();
+                int width = pngDecoder.getWidth();
+                int height = pngDecoder.getHeight();
                 int bytes = Integer.BYTES;
 
-                ByteBuffer data = ByteBuffer.allocateDirect(bytes * this.width * this.height);
-                pngDecoder.decode(data, this.width * bytes, PNGDecoder.Format.RGBA);
+                ByteBuffer data = ByteBuffer.allocateDirect(bytes * width * this.height);
+                pngDecoder.decode(data, width * bytes, PNGDecoder.Format.RGBA);
                 data.flip();
                 inputStream.close();
 
-                this.textureID = glGenTextures();
-                glActiveTexture(this.textureUnit);
-                glBindTexture(this.textureTarget, this.textureID);
-                glPixelStorei(GL_UNPACK_ALIGNMENT, bytes);
-
-                glTexParameteri(this.textureTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexParameteri(this.textureTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                glTexParameteri(this.textureTarget, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                glTexParameteri(this.textureTarget, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                glTexImage2D(this.textureTarget, 0, GL_RGBA, this.width, this.height, 0, this.textureFormat, GL_UNSIGNED_BYTE, data);
-
+                this.upload(data, bytes, width, height);
             } catch (IOException e)
             {
                 e.printStackTrace();
@@ -93,6 +83,21 @@ public final class Texture
             WireEngine.getLogger().warning("Texture does not exist");
         }
         return this;
+    }
+
+    public void upload(ByteBuffer data, int bytes, int width, int height)
+    {
+        this.width = width;
+        this.height = height;
+        glActiveTexture(this.textureUnit);
+        glBindTexture(this.textureTarget, this.textureID);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, bytes);
+
+        glTexParameteri(this.textureTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(this.textureTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(this.textureTarget, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(this.textureTarget, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexImage2D(this.textureTarget, 0, GL_RGBA, this.width, this.height, 0, this.textureFormat, GL_UNSIGNED_BYTE, data);
     }
 
     public void bind(ShaderProgram shader)

@@ -1,5 +1,7 @@
 package wireengine.core.rendering;
 
+import wireengine.core.rendering.renderer.ShaderProgram;
+
 /**
  * @author Kelan
  */

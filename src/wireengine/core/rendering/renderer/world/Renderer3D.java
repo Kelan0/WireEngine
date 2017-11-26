@@ -1,13 +1,14 @@
-package wireengine.core.rendering.renderer;
+package wireengine.core.rendering.renderer.world;
 
 import org.lwjgl.util.vector.Matrix4f;
+import wireengine.core.rendering.renderer.AbstractRenderer;
 
 import static org.lwjgl.opengl.GL11.glFrustum;
 
 /**
  * @author Kelan
  */
-public abstract class Renderer3D extends Renderer
+public abstract class Renderer3D extends AbstractRenderer
 {
     protected float fov;
     protected float near;
