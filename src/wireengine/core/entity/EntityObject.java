@@ -1,5 +1,6 @@
 package wireengine.core.entity;
 
+import wireengine.core.physics.Tensor;
 import wireengine.core.physics.collision.Collider;
 import wireengine.core.rendering.geometry.MeshData;
 import wireengine.core.rendering.geometry.Transformation;
@@ -9,14 +10,14 @@ import wireengine.core.rendering.geometry.Transformation;
  */
 public class EntityObject extends Entity
 {
-    public EntityObject(String name, float mass, Collider collider, MeshData mesh, Transformation transformation)
+    public EntityObject(String name, float mass, Collider collider, MeshData mesh, Tensor tensor, Transformation transformation)
     {
-        super(name, mass, collider, mesh, transformation);
+        super(name, mass, collider, mesh, tensor, transformation);
     }
 
-    public EntityObject(String name, float mass, MeshData mesh, Transformation transformation)
+    public EntityObject(String name, float mass, MeshData mesh, Tensor tensor, Transformation transformation)
     {
-        super(name, mass, mesh, transformation);
+        super(name, mass, mesh, tensor, transformation);
     }
 
     public EntityObject(String name, Transformation transformation)

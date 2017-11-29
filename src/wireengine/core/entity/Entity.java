@@ -3,6 +3,7 @@ package wireengine.core.entity;
 import wireengine.core.WireEngine;
 import wireengine.core.physics.ITickable;
 import wireengine.core.physics.PhysicsObject;
+import wireengine.core.physics.Tensor;
 import wireengine.core.physics.collision.Collider;
 import wireengine.core.rendering.IRenderable;
 import wireengine.core.rendering.renderer.ShaderProgram;
@@ -24,7 +25,7 @@ public abstract class Entity implements ITickable, IRenderable
     public boolean needsRenderInitialization;
     public boolean needsPhysicsInitialization;
 
-    public Entity(String name, float mass, Collider collider, MeshData mesh, Transformation transformation)
+    public Entity(String name, float mass, Collider collider, MeshData mesh, Tensor tensor, Transformation transformation)
     {
 //        System.out.println("Entity " + name + " has " + (collider == null ? ("no collider") : ("a collider with " + collider.getTriangles().radius() + " triangles")));
         this.name = name;
@@ -39,19 +40,19 @@ public abstract class Entity implements ITickable, IRenderable
             collider.getTransformation().set(transformation);
         }
 
-        this.physicsObject = new PhysicsObject(collider, mass);
+        this.physicsObject = new PhysicsObject(collider, mass, tensor);
         this.transformation = transformation;
         this.model = new Model(mesh, transformation);
     }
 
-    public Entity(String name, float mass, MeshData mesh, Transformation transformation)
+    public Entity(String name, float mass, MeshData mesh, Tensor tensor, Transformation transformation)
     {
-        this(name, mass, mesh != null ? new Collider(mesh, transformation) : null, mesh, transformation);
+        this(name, mass, mesh != null ? new Collider(mesh, transformation) : null, mesh, tensor, transformation);
     }
 
     public Entity(String name, Transformation transformation)
     {
-        this(name, 1.0F, null, transformation);
+        this(name, 1.0F, null, null, transformation);
     }
 
     public Entity(String name)

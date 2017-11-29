@@ -24,6 +24,7 @@ public class Collider
     private Transformation transformation;
     private final List<LinkedVertex> vertices = new ArrayList<>();
     private final List<Triangle> triangles = new ArrayList<>();
+    private Vector3f centre = new Vector3f();
 
     public Collider(List<Triangle> triangles, Transformation transformation)
     {
@@ -67,6 +68,8 @@ public class Collider
             if (index2 >= 0)
                 vertices.get(index2).addLink(index0).addLink(index1);
         }
+
+        recalculateCentre();
     }
 
     public Collider(List<Vector3f> vertices, List<Integer> indices, Transformation transformation)
@@ -93,6 +96,17 @@ public class Collider
         }
 
         constructAdjacents();
+        recalculateCentre();
+    }
+
+    public Collider(MeshData mesh, Transformation transformation)
+    {
+        this(mesh.getGeometrics(), mesh.getIndices(), transformation);
+    }
+
+    public Collider(Model model)
+    {
+        this(model.getMesh(), model.getTransformation());
     }
 
     public void constructAdjacents()
@@ -116,19 +130,21 @@ public class Collider
         }
     }
 
+    public void recalculateCentre()
+    {
+        Vector3f newCentre = new Vector3f();
+
+        for (Vector3f vertex : this.vertices)
+        {
+            Vector3f.add(vertex, newCentre, newCentre);
+        }
+
+        this.centre = (Vector3f) newCentre.scale(1.0F / this.vertices.size());
+    }
+
     public void simplifyMesh()
     {
         // Remove duplicated vertices in the list of triangles. For example, two triangles might share a vertex at the same position, but two separate vertices for each triangle was added to the list.
-    }
-
-    public Collider(MeshData mesh, Transformation transformation)
-    {
-        this(mesh.getGeometrics(), mesh.getIndices(), transformation);
-    }
-
-    public Collider(Model model)
-    {
-        this(model.getMesh(), model.getTransformation());
     }
 
     public Vector3f getFurthestVertex(Vector3f direction)
@@ -257,6 +273,11 @@ public class Collider
     public List<Triangle> getTriangles()
     {
         return triangles;
+    }
+
+    public Vector3f getCentre()
+    {
+        return new Vector3f(centre); // copy it to avoid external classes editing it.
     }
 
     private class LinkedVertex extends Vector3f

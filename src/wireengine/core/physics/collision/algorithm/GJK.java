@@ -104,16 +104,22 @@ public class GJK
 
     public static GJK checkCollision(Collider collider1, Collider collider2)
     {
-        GJK gjk = new GJK(collider1, collider2);
-
-        while (gjk.iterations < 100)
+        if (collider1 != null && collider2 != null)
         {
-            if (!gjk.update())
-            {
-                break;
-            }
-        }
+            GJK gjk = new GJK(collider1, collider2);
 
-        return gjk;
+            while (gjk.iterations < 100)
+            {
+                if (!gjk.update())
+                {
+                    break;
+                }
+            }
+
+            return gjk;
+        } else
+        {
+            return null;
+        }
     }
 }

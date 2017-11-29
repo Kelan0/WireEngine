@@ -96,12 +96,18 @@ public class EntitySelector
                     this.startOffset = Vector3f.sub(this.selectedEntity.transformation.getTranslation(), headPosition, null);
                     this.startRotationHead = new Quaternion(headRotation);
                     this.startRotationEntity = new Quaternion();
+                    this.selectedEntity.physicsObject.getLinearVelocity().scale(0.0F);
+                    this.selectedEntity.physicsObject.getLinearAcceleration().scale(0.0F);
+                    this.selectedEntity.physicsObject.getAngularVelocity().scale(0.0F);
+                    this.selectedEntity.physicsObject.getAngularAcceleration().scale(0.0F);
                 }
 
                 if (this.level.checkLevelBoundaries(this.selectedEntity, delta))
                 {
                     this.selectedEntity.physicsObject.getLinearVelocity().scale(0.0F);
                     this.selectedEntity.physicsObject.getLinearAcceleration().scale(0.0F);
+                    this.selectedEntity.physicsObject.getAngularVelocity().scale(0.0F);
+                    this.selectedEntity.physicsObject.getAngularAcceleration().scale(0.0F);
                 }
 
                 Vector3f velocity = (Vector3f) Vector3f.sub(this.selectedEntity.transformation.getTranslation(), this.lastPosition, null).scale((float) (1.0F / delta));

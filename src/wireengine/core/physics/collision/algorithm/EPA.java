@@ -102,7 +102,7 @@ public class EPA
 
     public static EPA getContact(GJK gjk)
     {
-        if (gjk == null)
+        if (gjk == null || !gjk.didCollide)
         {
             return null;
         } else

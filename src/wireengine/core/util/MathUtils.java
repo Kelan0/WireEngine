@@ -208,7 +208,10 @@ public class MathUtils
             dest = new Matrix4f();
         }
 
-        quat.normalise();
+        if (quat.lengthSquared() > 0.0F)
+        {
+            quat.normalise();
+        }
 
         float s = 2.0F / quat.length();
 

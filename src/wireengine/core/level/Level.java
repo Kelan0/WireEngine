@@ -1,7 +1,8 @@
 package wireengine.core.level;
 
+import javafx.util.Pair;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.util.vector.ReadableVector3f;
+import org.lwjgl.util.vector.Matrix3f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.WireEngine;
@@ -22,6 +23,7 @@ import wireengine.core.rendering.renderer.DebugRenderer;
 import wireengine.core.rendering.renderer.ShaderProgram;
 import wireengine.core.util.MathUtils;
 import wireengine.core.window.InputHandler;
+import wireengine.testgame.TestGame;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +47,8 @@ public class Level implements IRenderable, ITickable
 
     private Vector3f levelSize = new Vector3f(25.0F, 15.0F, 25.0F);
     private boolean renderHitbox;
+
+    private List<Pair<Vector3f, Vector4f>> debug = new ArrayList<>();
 
     public Level()
     {
@@ -153,6 +157,21 @@ public class Level implements IRenderable, ITickable
                 entity.render(delta, shaderProgram);
             }
         }
+        glPointSize(10.0F);
+        DebugRenderer.getInstance().begin(GL_LINES);
+
+        synchronized (debug)
+        {
+            for (Pair<Vector3f, Vector4f> v : debug)
+            {
+                DebugRenderer.getInstance().addColour(v.getValue());
+                DebugRenderer.getInstance().addVertex(v.getKey());
+            }
+
+            debug.clear();
+        }
+
+        DebugRenderer.getInstance().end(shaderProgram);
 
         if (InputHandler.keyPressed(GLFW.GLFW_KEY_F2))
         {
@@ -183,18 +202,23 @@ public class Level implements IRenderable, ITickable
 
         this.entityManager.update();
 
-        List<Entity> entities = this.entityList;
+//        new Thread(new Runnable()
+//        {
+//            @Override
+//            public void run()
+//            {
+        List<Entity> entities = entityList;
 
-        synchronized (this.collidingEntities)
+        synchronized (collidingEntities)
         {
             for (Entity entity : entities)
             {
-                entity.physicsObject.applyAcceleration(new Vector3f(0.0F, -9.807F, 0.0F));
+                entity.physicsObject.applyLinearAcceleration(new Vector3f(0.0F, -9.807F, 0.0F));
                 entity.tick(delta);
                 checkLevelBoundaries(entity, delta);
             }
 
-            this.collidingEntities.clear();
+            collidingEntities.clear();
             for (int i = 0; i < entities.size(); i++)
             {
                 for (int j = i + 1; j < entities.size(); j++)
@@ -215,17 +239,24 @@ public class Level implements IRenderable, ITickable
 
                             if (epa != null && epa.collisionPoint != null && epa.collisionNormal != null)
                             {
-//                                float overlap = epa.collisionDepth;
-//                                entity1.transformation.translate((Vector3f) new Vector3f(epa.collisionNormal).scale(+overlap));
-//                                entity2.transformation.translate((Vector3f) new Vector3f(epa.collisionNormal).scale(-overlap));
-                                correctPenetration(epa.collisionNormal, entity1, entity2, epa.collisionDepth);
-                                applyLinearImpulse(epa.collisionNormal, 0.9F, entity1, entity2, delta);
+                                correctPenetration(entity1, entity2, epa.collisionNormal, epa.collisionDepth);
+                                applyCollisionForces(entity1, entity2, epa.collisionNormal, epa.collisionPoint, 0.5F, delta);
+
+                                synchronized (debug)
+                                {
+                                    debug.add(new Pair<>(entity1.physicsObject.getCentreOfMass(), new Vector4f(0.0F, 1.0F, 1.0F, 1.0F)));
+                                    debug.add(new Pair<>(epa.collisionPoint, new Vector4f(0.0F, 1.0F, 1.0F, 1.0F)));
+                                    debug.add(new Pair<>(entity2.physicsObject.getCentreOfMass(), new Vector4f(0.0F, 1.0F, 1.0F, 1.0F)));
+                                    debug.add(new Pair<>(epa.collisionPoint, new Vector4f(0.0F, 1.0F, 1.0F, 1.0F)));
+                                }
                             }
                         }
                     }
                 }
             }
         }
+//            }
+//        }).start();
     }
 
     public boolean checkLevelBoundaries(Entity entity, double delta)
@@ -250,7 +281,8 @@ public class Level implements IRenderable, ITickable
             {
                 float overlap = levelSize - max;
                 entity.transformation.translate((Vector3f) new Vector3f(dirPos).scale(overlap));
-                applyLinearImpulse(dirNeg, e, entity, null, delta);
+                applyCollisionForces(entity, null, dirNeg, maxPoint, e, delta);
+
                 corrected = true;
             }
 
@@ -258,7 +290,8 @@ public class Level implements IRenderable, ITickable
             {
                 float overlap = min + levelSize;
                 entity.transformation.translate((Vector3f) new Vector3f(dirNeg).scale(overlap));
-                applyLinearImpulse(dirPos, e, entity, null, delta);
+                applyCollisionForces(entity, null, dirPos, minPoint, e, delta);
+
                 corrected = true;
             }
         }
@@ -266,10 +299,10 @@ public class Level implements IRenderable, ITickable
         return corrected;
     }
 
-    public void correctPenetration(Vector3f normal, Entity a, Entity b, float penetrationDepth)
+    public void correctPenetration(Entity a, Entity b, Vector3f normal, float penetrationDepth)
     {
-        float amount = 0.2F;
-        float epsilon = 0.01F;
+        float amount = 1.0F;
+        float epsilon = 0.0F;
 
         float mass = a.physicsObject.getMass() + b.physicsObject.getMass();
         float im0 = 1.0F / a.physicsObject.getMass();
@@ -279,51 +312,104 @@ public class Level implements IRenderable, ITickable
 
         float correction = (Math.max(penetrationDepth - epsilon, 0.0F) / (im0 + im1)) * amount;
 
-        a.transformation.translate((Vector3f) new Vector3f(normal).scale(+correction * r0));
-        b.transformation.translate((Vector3f) new Vector3f(normal).scale(-correction * r1));
+        a.transformation.translate((Vector3f) new Vector3f(normal).scale(+correction * r1));
+        b.transformation.translate((Vector3f) new Vector3f(normal).scale(-correction * r0));
     }
 
-    public void applyLinearImpulse(Vector3f normal, float e, Entity a, Entity b, double delta)
+    public void applyCollisionForces(Entity a, Entity b, Vector3f normal, Vector3f collisionPointWorldSpace, float e, double delta)
     {
-        if (e >= 1.0F)
+        float j = getImpulse(a, b, normal, collisionPointWorldSpace, e, delta);
+
+        Vector4f colour0 = new Vector4f(1.0F, 0.0F, 1.0F, 1.0F);
+        Vector4f colour1 = new Vector4f(1.0F, 1.0F, 0.0F, 1.0F);
+
+        if (a != null)
         {
-            e = 1.0F;
-        } else if (e <= 0.0F)
-        {
-            e = 0.0F;
-        } else
-        {
-            e = (float) Math.sqrt(e);
+//            a.physicsObject.applyCollisionForces((Vector3f) new Vector3f(normal).scale(+j), Vector3f.sub(collisionPointWorldSpace, a.physicsObject.getCentreOfMass(), null));
+
+            Matrix3f rotation = new Matrix3f();//MathUtils.matrix4fToMatrix3f(a.transformation.getMatrix(null), null);
+            Vector3f collisionPointLocalSpace = Matrix3f.transform(rotation, Vector3f.sub(a.physicsObject.getCentreOfMass(), collisionPointWorldSpace, null), null);
+            Vector3f axis = Vector3f.cross(collisionPointLocalSpace, normal, null);
+
+            synchronized (debug)
+            {
+                this.debug.add(new Pair<>(collisionPointWorldSpace, colour0));
+                this.debug.add(new Pair<>(Vector3f.add((Vector3f) axis.scale(+j), collisionPointWorldSpace, null), colour0));
+                this.debug.add(new Pair<>(collisionPointWorldSpace, colour1));
+                this.debug.add(new Pair<>(Vector3f.add((Vector3f) normal.scale(+j), collisionPointWorldSpace, null), colour1));
+            }
+
+            a.physicsObject.applyLinearImpulse((Vector3f) new Vector3f(normal).scale(+j));
+
+            if (TestGame.allowRotation)
+                a.physicsObject.applyAngularImpulse((Vector3f) axis.scale((float) (+j / delta)));
+
         }
+        if (b != null)
+        {
+//            b.physicsObject.applyCollisionForces((Vector3f) new Vector3f(normal).scale(-j), Vector3f.sub(collisionPointWorldSpace, b.physicsObject.getCentreOfMass(), null));
+
+            Matrix3f rotation = new Matrix3f();//MathUtils.matrix4fToMatrix3f(b.transformation.getMatrix(null), null);
+            Vector3f collisionPointLocalSpace = Matrix3f.transform(rotation, Vector3f.sub(b.physicsObject.getCentreOfMass(), collisionPointWorldSpace, null), null);
+            Vector3f axis = Vector3f.cross(collisionPointLocalSpace, normal, null);
+
+            synchronized (debug)
+            {
+                this.debug.add(new Pair<>(collisionPointWorldSpace, colour0));
+                this.debug.add(new Pair<>(Vector3f.add((Vector3f) axis.scale(-j), collisionPointWorldSpace, null), colour0));
+                this.debug.add(new Pair<>(collisionPointWorldSpace, colour1));
+                this.debug.add(new Pair<>(Vector3f.add((Vector3f) normal.scale(-j), collisionPointWorldSpace, null), colour1));
+            }
+
+            b.physicsObject.applyLinearImpulse((Vector3f) new Vector3f(normal).scale(-j));
+            if (TestGame.allowRotation)
+                b.physicsObject.applyAngularImpulse((Vector3f) axis.scale((float) (-j / delta)));
+        }
+    }
+
+    public float getImpulse(Entity a, Entity b, Vector3f normal, Vector3f collisionPointWorldSpace, float e, double delta)
+    {
+        e = e >= 1.0F ? 1.0F : (float) (e <= 0.0F ? 0.0F : Math.sqrt(e));
 
         if (a != null || b != null)
         {
             Vector3f v0 = a != null ? new Vector3f(a.physicsObject.getLinearVelocity()) : new Vector3f();
             Vector3f v1 = b != null ? new Vector3f(b.physicsObject.getLinearVelocity()) : new Vector3f();
 
-            float m0 = a != null ? a.physicsObject.getMass() : Float.POSITIVE_INFINITY;
-            float m1 = b != null ? b.physicsObject.getMass() : Float.POSITIVE_INFINITY; // infinite mass will not move. Java interprates div by inf to be 0
-
-            float im0 = 1.0F / m0;
-            float im1 = 1.0F / m1;
+            float im0 = 1.0F / (a != null ? a.physicsObject.getMass() : Float.POSITIVE_INFINITY);
+            float im1 = 1.0F / (b != null ? b.physicsObject.getMass() : Float.POSITIVE_INFINITY);
 
             Vector3f rv = Vector3f.sub(v0, v1, null);
-            float dot = Vector3f.dot(rv, normal);
-
-            if (dot <= 0.0F)
+            float vDotN = Vector3f.dot(rv, normal);
+            if (vDotN <= 0.0F)
             {
-                float j = (-(1.0F + e) * dot) / (im0 + im1);
+                Vector3f t0 = new Vector3f();
+                Vector3f t1 = new Vector3f();
 
-                if (a != null)
+                if (TestGame.allowRotation)
                 {
-                    a.physicsObject.applyForce((Vector3f) new Vector3f(normal).scale((float) (+j / delta)));
+                    if (a != null && collisionPointWorldSpace != null)
+                    {
+                        Matrix3f i0 = a.physicsObject.getWorldTensorInv();
+                        Vector3f r0 = Vector3f.sub(collisionPointWorldSpace, a.physicsObject.getCentreOfMass(), null);
+                        t0 = Matrix3f.transform(i0, Vector3f.cross(Vector3f.cross(r0, normal, null), r0, null), null);
+
+                    }
+
+                    if (b != null && collisionPointWorldSpace != null)
+                    {
+                        Matrix3f i1 = b.physicsObject.getWorldTensorInv();
+                        Vector3f r1 = Vector3f.sub(collisionPointWorldSpace, b.physicsObject.getCentreOfMass(), null);
+                        t1 = Matrix3f.transform(i1, Vector3f.cross(Vector3f.cross(r1, normal, null), r1, null), null);
+                    }
                 }
-                if (b != null)
-                {
-                    b.physicsObject.applyForce((Vector3f) new Vector3f(normal).scale((float) (-j / delta)));
-                }
+
+                float denom = im0 + im1 + Vector3f.dot(Vector3f.add(t0, t1, null), normal);
+                return (float) (((-(1.0F + e) * vDotN) / denom) * delta);
             }
         }
+
+        return 0.0F;
     }
 
     @Override

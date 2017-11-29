@@ -55,7 +55,7 @@ public class Player extends Entity
     {
         //        new Ellipsoid(new Vector3f(0.0F, this.currentHeight * 0.5F + 0.05F, 0.0F), new Vector3f(playerSize, currentHeight * 0.5F + 0.1f, playerSize))
         Collider collider = Colliders.getEllipsoid(1, new Vector3f(playerSize, currentHeight * 0.5F + 0.1F, playerSize));
-        this.physicsObject = new PhysicsObject(collider, 70.0F);
+        this.physicsObject = new PhysicsObject(collider, 70.0F, null);
         this.physicsObject.setDampVelocity(true);
 //        debug = new PolyTriangle(new Vector3f(10.0F, 0.0F, 1.0f), new Vector3f(10.0F, 3.0F, -4.0F), new Vector3f(12.0F, -1.0F, -4.5F));
 //        this.test1 = new PhysicsObject(new PolyTriangle[]{new PolyTriangle(new Vector3f(-1.0F, 0.0F, 1.5F), new Vector3f(-0.8F, 1.8F, 0.6F), new Vector3f(0.2F, 0.7F, -1.4F))}, 70.0F);
@@ -234,7 +234,7 @@ public class Player extends Entity
         if (toMove.lengthSquared() > 0.0F)
         {
             toMove.normalise().scale(currentSpeed);
-            this.physicsObject.applyAcceleration(toMove);
+            this.physicsObject.applyLinearAcceleration(toMove);
         }
 
         if (InputHandler.isCursorGrabbed())

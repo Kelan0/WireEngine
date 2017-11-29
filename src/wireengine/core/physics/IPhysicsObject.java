@@ -10,11 +10,21 @@ public interface IPhysicsObject
 {
     void tick(double delta);
 
-    void applyForce(Vector3f force);
+    void applyLinearImpulse(Vector3f impulse);
 
-    void applyAcceleration(Vector3f acceleration);
+    void applyLinearForce(Vector3f force);
 
-    void applyTorque(Vector3f torque);
+    void applyLinearAcceleration(Vector3f acceleration);
+
+    void applyAngularImpulse(Vector3f impulse);
+
+    void applyAngularForce(Vector3f force);
+
+    void applyAngularAcceleration(Vector3f torque);
+
+    void applyForce(Vector3f force, Vector3f position);
+
+    void applyImpulse(Vector3f force, Vector3f position);
 
     Transformation getTransformation();
 

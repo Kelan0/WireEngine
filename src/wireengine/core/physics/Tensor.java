@@ -40,14 +40,14 @@ public abstract class Tensor
         @Override
         public Matrix3f getTensor()
         {
-            Matrix3f m = new Matrix3f();
-
+            Matrix3f tensor = new Matrix3f();
             float mScaler = (1.0F / 12.0F) * this.mass;
-            m.m00 = mScaler * (size.y * size.y + size.z * size.z);
-            m.m11 = mScaler * (size.x * size.x + size.z * size.z);
-            m.m22 = mScaler * (size.x * size.x + size.y * size.y);
 
-            return m;
+            tensor.m00 = mScaler * (size.y * size.y + size.z * size.z);
+            tensor.m11 = mScaler * (size.x * size.x + size.z * size.z);
+            tensor.m22 = mScaler * (size.x * size.x + size.y * size.y);
+
+            return tensor;
         }
 
         public Vector3f getSize()

@@ -1,8 +1,8 @@
 package wireengine.testgame;
 
+import org.lwjgl.util.vector.Matrix3f;
 import org.lwjgl.util.vector.Quaternion;
 import org.lwjgl.util.vector.Vector3f;
-import org.lwjgl.util.vector.Vector4f;
 import wireengine.core.GameSettings;
 import wireengine.core.WireEngine;
 import wireengine.core.entity.EntityObject;
@@ -10,21 +10,18 @@ import wireengine.core.entity.Player;
 import wireengine.core.event.events.TickEvent;
 import wireengine.core.level.Level;
 import wireengine.core.level.LevelLoader;
+import wireengine.core.physics.Tensor;
 import wireengine.core.rendering.FrameBuffer;
 import wireengine.core.rendering.geometry.MeshData;
 import wireengine.core.rendering.geometry.MeshHelper;
 import wireengine.core.rendering.geometry.Transformation;
 import wireengine.core.rendering.renderer.gui.FontRenderer;
 import wireengine.core.rendering.renderer.gui.GuiRenderer;
-import wireengine.core.rendering.renderer.gui.font.FontData;
-import wireengine.core.rendering.renderer.gui.font.Line;
-import wireengine.core.rendering.renderer.gui.font.StaticText;
 import wireengine.core.rendering.renderer.world.WorldRenderer;
 import wireengine.core.util.Constants;
 import wireengine.core.util.MathUtils;
 import wireengine.core.window.InputHandler;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
@@ -37,6 +34,7 @@ import static wireengine.core.WireEngine.engine;
  */
 public class TestGame extends Game
 {
+    public static boolean allowRotation = true;
     private static TestGame instance;
     private WorldRenderer worldRenderer;
     private GuiRenderer guiRenderer;
@@ -89,13 +87,24 @@ public class TestGame extends Game
 
             if (WireEngine.engine().getRandom().nextFloat() < 0.5)
             {
-                Quaternion rotation = MathUtils.axisAngleToQuaternion(new Vector3f(random.nextFloat(), random.nextFloat(), random.nextFloat()).normalise(null), (float) (random.nextFloat() * Constants.PI * 2.0F), null);
+                Quaternion rotation;
+
+                if (allowRotation)
+                {
+                    rotation = MathUtils.axisAngleToQuaternion(new Vector3f(random.nextFloat(), random.nextFloat(), random.nextFloat()).normalise(null), (float) (random.nextFloat() * Constants.PI * 2.0F), null);
+                } else
+                {
+                    rotation = new Quaternion();
+                }
+
                 Vector3f scale = new Vector3f(random.nextFloat() * 2.0F, random.nextFloat() * 2.0F, random.nextFloat() * 2.0F);
                 MeshData mesh = MeshHelper.createCuboid(Vector3f.add(scale, new Vector3f(0.5F, 0.5F, 0.5F), null));
                 float mass = 1.0F + scale.x * scale.y * scale.z;
 
-                EntityObject entity = new EntityObject("box" + i, mass, mesh, new Transformation(position, rotation));
-                entity.physicsObject.applyTorque((Vector3f) new Vector3f(random.nextFloat(), random.nextFloat(), random.nextFloat()).normalise(null).scale(random.nextFloat() * 3.0F));
+                Tensor tensor = new Tensor.Cuboid(mass, scale);
+
+                EntityObject entity = new EntityObject("box" + i, mass, mesh, tensor, new Transformation(position, rotation));
+//                entity.physicsObject.applyAngularAcceleration((Vector3f) new Vector3f(random.nextFloat(), random.nextFloat(), random.nextFloat()).normalise(null).scale(random.nextFloat() * 3.0F));
                 this.level.addEntity(entity);
             } else
             {
@@ -103,7 +112,10 @@ public class TestGame extends Game
                 MeshData mesh = MeshHelper.createIcosphere(random.nextInt(5), radius);
 
                 float mass = (float) (1.0F + (4.0F / 3.0F) * Constants.PI * radius * radius * radius);
-                this.level.addEntity(new EntityObject("ball" + i, mass, mesh, new Transformation(position)));
+
+                Tensor tensor = new Tensor.Sphere(mass, radius);
+
+                this.level.addEntity(new EntityObject("ball" + i, mass, mesh, tensor, new Transformation(position)));
             }
         }
     }
@@ -173,6 +185,23 @@ public class TestGame extends Game
     {
         TestGame.instance = new TestGame(args);
         WireEngine.createEngine(TestGame.instance);
+
+//        Random random = new Random(System.nanoTime());
+//
+//        Vector3f axis = new Vector3f(random.nextFloat() - 0.5F, random.nextFloat() - 0.5F, random.nextFloat() - 0.5F).normalise(null);
+//        float angle = random.nextFloat() * 10.0F;
+//
+//        Matrix3f rotation = MathUtils.quaternionToMatrix3f(MathUtils.axisAngleToQuaternion(axis, angle, null), null);
+//        Matrix3f tensor = new Tensor.Cuboid(11.25F, new Vector3f(8.0F, 4.0F, 2.0F)).getWorldTensorInv();
+//
+//        System.out.println("Tensor:\n" + tensor);
+//        System.out.println("Axis: " + axis + ", angle: " + angle + "rad");
+//
+//        Matrix3f r1 = Matrix3f.mul(Matrix3f.mul(rotation, tensor, null),  rotation.transpose(null), null);
+//        Matrix3f r2 = Matrix3f.mul(rotation, Matrix3f.mul(tensor,  rotation.transpose(null), null), null);
+//
+//        System.out.println(r1 + "\n");
+//        System.out.println(r2 + "\n");
 
 //        FontData font = FontData.loadFont(new File("res/fonts/arial.fnt"));
 //        String str = "test string\nnew line\n\n\na very long line to cause the line to break once the line length exceeds the maximum allowed length.";

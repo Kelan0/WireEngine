@@ -1,13 +1,13 @@
 package wireengine.core.physics;
 
-import org.lwjgl.util.vector.Vector3f;
-import org.lwjgl.util.vector.Vector4f;
+import org.lwjgl.util.vector.*;
 import wireengine.core.physics.collision.AxisAlignedBB;
 import wireengine.core.physics.collision.Collider;
 import wireengine.core.physics.collision.colliders.Triangle;
 import wireengine.core.rendering.geometry.Transformation;
 import wireengine.core.rendering.renderer.DebugRenderer;
 import wireengine.core.rendering.renderer.ShaderProgram;
+import wireengine.core.util.MathUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,10 +23,16 @@ public class PhysicsObject implements IPhysicsObject
     protected Collider collider;
 
     protected Transformation transformation;
+
     protected Vector3f linearVelocity = new Vector3f();
     protected Vector3f linearAcceleration = new Vector3f();
     protected Vector3f angularVelocity = new Vector3f();
-    protected Vector3f angularAcceleration = new Vector3f();
+    protected Vector3f angularAcceleration = new Vector3f(); // torque
+
+    protected Tensor tensor;
+    protected Matrix3f worldTensor = new Matrix3f();
+    protected Matrix3f worldTensorInv = new Matrix3f();
+    protected Vector3f centreOfMass;
 
     protected float mass = 1.0F;
     protected boolean onGround = false;
@@ -34,10 +40,11 @@ public class PhysicsObject implements IPhysicsObject
 
     protected final boolean isStatic;
 
-    public PhysicsObject(Collider collider, float mass, boolean isStatic)
+    public PhysicsObject(Collider collider, float mass, Tensor tensor, boolean isStatic)
     {
         this.collider = collider;
         this.mass = mass;
+        this.tensor = tensor;
         this.isStatic = isStatic;
 
         if (collider != null)
@@ -47,38 +54,38 @@ public class PhysicsObject implements IPhysicsObject
         }
     }
 
-    public PhysicsObject(Collider collider, float mass)
+    public PhysicsObject(Collider collider, float mass, Tensor tensor)
     {
-        this(collider, mass, false);
+        this(collider, mass, tensor, false);
     }
 
     @Override
     public synchronized void tick(double delta)
     {
-        float velocityDamper = 5.6F; //kind of like friction I guess.
+        Vector3f rCentre = this.collider.getCentre();
+        Vector4f wCentre = new Vector4f(rCentre.x, rCentre.y, rCentre.z, 1.0F);
+        Matrix4f.transform(this.transformation.getMatrix(null), wCentre, wCentre);
+        this.centreOfMass = new Vector3f(wCentre);
 
-        Vector3f position = this.getTransformation().getTranslation();
-        Vector3f linearVelocity = this.getLinearVelocity();
-        Vector3f linearAcceleration = this.getLinearAcceleration();
-
-        linearVelocity.x += linearAcceleration.x * delta;
-        linearVelocity.y += linearAcceleration.y * delta;
-        linearVelocity.z += linearAcceleration.z * delta;
-
-        float dot = Vector3f.dot(linearVelocity, linearAcceleration);
-        if (dot <= 0.0F && dampVelocity) //TODo: scale the linearVelocity damper value based on how much the linearVelocity and the linearAcceleration face in the same direction.
+        if (this.tensor != null)
         {
-            linearVelocity.x /= 1.0F + velocityDamper * delta;
-            linearVelocity.y /= 1.0F + velocityDamper * delta;
-            linearVelocity.z /= 1.0F + velocityDamper * delta;
+            Matrix3f rotation = MathUtils.quaternionToMatrix3f(this.getTransformation().getRotation(), null);
+            Matrix3f localTensor = this.tensor.getTensor();
+            Matrix3f localTensorInv = Matrix3f.invert(localTensor, null);
+
+            this.worldTensor = new Matrix3f();
+            this.worldTensorInv = new Matrix3f();
+            Matrix3f.mul(Matrix3f.mul(rotation, localTensor, null), rotation.transpose(null), this.worldTensor);
+            Matrix3f.mul(Matrix3f.mul(rotation, localTensorInv, null), rotation.transpose(null), this.worldTensorInv);
         }
 
-        position.x += linearVelocity.x * delta + 0.5F * linearAcceleration.x * delta * delta;
-        position.y += linearVelocity.y * delta + 0.5F * linearAcceleration.y * delta * delta;
-        position.z += linearVelocity.z * delta + 0.5F * linearAcceleration.z * delta * delta;
+        integrateVelocities(delta);
+        applyDamping(delta);
+        integrateTransforms(delta);
         updateColliders();
 
         this.linearAcceleration = new Vector3f();
+        this.angularAcceleration = new Vector3f();
     }
 
     private void updateColliders()
@@ -87,6 +94,56 @@ public class PhysicsObject implements IPhysicsObject
         {
             this.aabb.setTransform(this.collider.getTransformation());
         }
+    }
+
+    private void applyDamping(double delta)
+    {
+        float linearDamper = 5.6F; //TODO
+        float dot = Vector3f.dot(linearVelocity, linearAcceleration);
+        if (dot <= 0.0F && dampVelocity) //TODo: scale the linearVelocity damper value based on how much the linearVelocity and the linearAcceleration face in the same direction.
+        {
+            linearVelocity.x /= 1.0F + linearDamper * delta;
+            linearVelocity.y /= 1.0F + linearDamper * delta;
+            linearVelocity.z /= 1.0F + linearDamper * delta;
+        }
+
+        float angularDamper = 0.4F;
+
+        angularVelocity.x /= 1.0F + angularDamper * delta;
+        angularVelocity.y /= 1.0F + angularDamper * delta;
+        angularVelocity.z /= 1.0F + angularDamper * delta;
+    }
+
+    private void integrateVelocities(double delta)
+    {
+        Vector3f linearAcceleration = (Vector3f) new Vector3f(this.linearAcceleration).scale((float) delta);
+        Vector3f.add(linearAcceleration, this.linearVelocity, this.linearVelocity);
+
+        Vector3f angularAcceleration = (Vector3f) new Vector3f(this.angularAcceleration).scale((float) delta);
+        Matrix3f.transform(this.worldTensorInv, angularAcceleration, angularAcceleration);
+        Vector3f.add(angularAcceleration, this.angularVelocity, this.angularVelocity);
+    }
+
+    private void integrateTransforms(double delta)
+    {
+        Vector3f position = this.getTransformation().getTranslation();
+        Quaternion rotation = this.getTransformation().getRotation();
+
+        position.x += linearVelocity.x * delta + 0.5F * linearAcceleration.x * delta * delta;
+        position.y += linearVelocity.y * delta + 0.5F * linearAcceleration.y * delta * delta;
+        position.z += linearVelocity.z * delta + 0.5F * linearAcceleration.z * delta * delta;
+
+        if (rotation.lengthSquared() <= 0.0F)
+        {
+            rotation = new Quaternion();
+        }
+
+        rotation.normalise();
+        rotation.x += (+angularVelocity.x * rotation.w + angularVelocity.y * rotation.z - angularVelocity.z * rotation.y) * delta * 0.5F;
+        rotation.y += (+angularVelocity.y * rotation.w + angularVelocity.z * rotation.x - angularVelocity.x * rotation.z) * delta * 0.5F;
+        rotation.z += (+angularVelocity.z * rotation.w + angularVelocity.x * rotation.y - angularVelocity.y * rotation.x) * delta * 0.5F;
+        rotation.w += (-angularVelocity.x * rotation.x - angularVelocity.y * rotation.y - angularVelocity.z * rotation.z) * delta * 0.5F;
+        rotation.normalise();
     }
 
     public synchronized void renderDebug(ShaderProgram shaderProgram, Vector4f colour, int renderMode)
@@ -128,21 +185,67 @@ public class PhysicsObject implements IPhysicsObject
     }
 
     @Override
-    public synchronized void applyForce(Vector3f force)
+    public synchronized void applyLinearImpulse(Vector3f impulse)
     {
-        applyAcceleration((Vector3f) new Vector3f(force).scale(1.0F / mass)); //F = M * A, A = F / M
+        Vector3f.add(impulse, this.linearVelocity, this.linearVelocity);
     }
 
     @Override
-    public synchronized void applyAcceleration(Vector3f acceleration)
+    public synchronized void applyLinearForce(Vector3f force)
+    {
+        applyLinearAcceleration((Vector3f) new Vector3f(force).scale(1.0F / mass)); //F = M * A, A = F / M
+    }
+
+    @Override
+    public synchronized void applyLinearAcceleration(Vector3f acceleration)
     {
         Vector3f.add(acceleration, this.linearAcceleration, this.linearAcceleration);
     }
 
     @Override
-    public synchronized void applyTorque(Vector3f torque)
+    public synchronized void applyAngularImpulse(Vector3f impulse)
     {
+        Vector3f.add(Matrix3f.transform(this.worldTensorInv, impulse, null), this.angularVelocity, this.angularVelocity);
+    }
 
+    @Override
+    public void applyAngularForce(Vector3f force)
+    {
+        applyAngularAcceleration(force);
+    }
+
+    @Override
+    public synchronized void applyAngularAcceleration(Vector3f acceleration) // torque
+    {
+        Vector3f.add(acceleration, this.angularAcceleration, this.angularAcceleration);
+    }
+
+    @Override
+    public void applyForce(Vector3f force, Vector3f position)
+    {
+        if (force != null)
+        {
+            applyLinearForce(force);
+
+            if (position != null)
+            {
+                applyAngularForce(Vector3f.cross(position, force, null));
+            }
+        }
+    }
+
+    @Override
+    public synchronized void applyImpulse(Vector3f impulse, Vector3f position)
+    {
+        if (impulse != null)
+        {
+            applyLinearImpulse(impulse);
+
+            if (position != null)
+            {
+                applyAngularImpulse(Vector3f.cross(position, impulse, null));
+            }
+        }
     }
 
     @Override
@@ -217,6 +320,20 @@ public class PhysicsObject implements IPhysicsObject
         return this.collider;
     }
 
+    public Vector3f getCentreOfMass()
+    {
+        return this.centreOfMass;
+    }
+
+    public Matrix3f getWorldTensorInv()
+    {
+        return this.worldTensorInv;
+    }
+
+    public Matrix3f getWorldTensor()
+    {
+        return this.worldTensor;
+    }
     public AxisAlignedBB getAxisAlignedBB()
     {
         return aabb;
